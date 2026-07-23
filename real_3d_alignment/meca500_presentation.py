@@ -23,7 +23,14 @@ class Meca500PresentationRenderer:
     """
 
     _ALIGNED_Q_DEG = np.asarray(
-        [-90.377406, -21.5459251, -72.4287403, 0.0, 93.9103863, -88.3739],
+        [
+            -79.28978634,
+            -21.21559892,
+            -35.81736338,
+            -22.21267786,
+            62.74105957,
+            177.21542446,
+        ],
         dtype=np.float64,
     )
     _SEARCH_Q_DEG = _ALIGNED_Q_DEG + np.asarray(
@@ -31,7 +38,14 @@ class Meca500PresentationRenderer:
         dtype=np.float64,
     )
     _INSERTED_Q_DEG = np.asarray(
-        [-90.377406, -28.7207737, -52.1346541, 0.0, 80.8554277, -88.3739],
+        [
+            -80.26645740,
+            -19.29875570,
+            -34.15577909,
+            -23.12475641,
+            59.12982305,
+            177.21542446,
+        ],
         dtype=np.float64,
     )
 

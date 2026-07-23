@@ -43,9 +43,10 @@ def eye_in_hand_focal_length_px(image_height_px: int) -> float:
 def build_nih_traditional_detector() -> TraditionalRingDetector:
     return TraditionalRingDetector(
         TraditionalRingDetectorConfig(
-            hue_ranges=((82, 112),),
+            hue_ranges=((94, 101),),
             saturation_minimum=55,
             value_minimum=35,
+            maximum_radius_px=45.0,
         )
     )
 
@@ -82,6 +83,7 @@ def build_nih_fine_detector(image_height_px: int) -> NihFineRingDetector:
             focal_length_px=eye_in_hand_focal_length_px(image_height_px),
             trocar_outer_radius_mm=TROCAR_FLANGE_OUTER_RADIUS_MM,
             target_standoff_mm=M3_TARGET_STANDOFF_MM,
+            hue_ranges=((94, 101),),
             minimum_outer_area_px2=max(30.0, 180.0 * image_scale**2),
             minimum_inner_area_px2=max(4.0, 20.0 * image_scale**2),
             maximum_outer_diameter_px=120.0 * image_scale,

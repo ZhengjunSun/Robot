@@ -20,6 +20,7 @@ class RingDetection:
 class TraditionalRingDetectorConfig:
     minimum_area_px2: float = 80.0
     minimum_radius_px: float = 4.0
+    maximum_radius_px: float | None = None
     minimum_circularity: float = 0.18
     saturation_minimum: int = 70
     value_minimum: int = 45
@@ -79,6 +80,10 @@ class TraditionalRingDetector:
             circle_center, radius = cv2.minEnclosingCircle(contour)
             if (
                 radius < cfg.minimum_radius_px
+                or (
+                    cfg.maximum_radius_px is not None
+                    and radius > cfg.maximum_radius_px
+                )
                 or circularity < cfg.minimum_circularity
             ):
                 continue

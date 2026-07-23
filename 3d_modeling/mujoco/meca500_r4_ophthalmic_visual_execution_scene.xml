@@ -129,11 +129,12 @@
                       <geom name="instrument_mount_screw_3" type="cylinder" pos="0 0.0062 0.00204" size="0.00135 0.00005" material="meca_light" mass="0"/>
                       <geom name="instrument_mount_screw_4" type="cylinder" pos="0 -0.0062 0.00204" size="0.00135 0.00005" material="meca_light" mass="0"/>
                       <geom name="instrument_adapter" type="cylinder" fromto="0 0 0.0021 0 0 0.012" size="0.0025" material="meca_light" mass="0.010"/>
-                      <geom name="instrument_shaft" type="capsule" fromto="0 0 0.012 0 0 0.120" size="0.000255" material="tool_mat" mass="0.015"/>
-                      <geom name="instrument_tip_marker" type="sphere" pos="0 0 0.120" size="0.00036" rgba="0.96 0.38 0.08 1" mass="0"/>
-                      <site name="tool_tip" pos="0 0 0.120" size="0.00055" rgba="0.00 0.45 0.95 1"/>
+                      <!-- Visible needle length reduced from 108 mm to 36 mm. -->
+                      <geom name="instrument_shaft" type="capsule" fromto="0 0 0.012 0 0 0.048" size="0.000255" material="tool_mat" mass="0.005"/>
+                      <geom name="instrument_tip_marker" type="sphere" pos="0 0 0.048" size="0.00036" rgba="0.96 0.38 0.08 1" mass="0"/>
+                      <site name="tool_tip" pos="0 0 0.048" size="0.00055" rgba="0.00 0.45 0.95 1"/>
                       <!-- Camera optical axis follows the outward +z tool axis. -->
-                      <camera name="eye_in_hand" mode="fixed" pos="0.004 0 0.108" xyaxes="0 1 0 1 0 0" fovy="41.9741"/>
+                      <camera name="eye_in_hand" mode="fixed" pos="0.004 0 0.036" xyaxes="0 1 0 1 0 0" fovy="41.9741"/>
                     </body>
                   </body>
                 </body>
@@ -163,11 +164,13 @@
         centre. The axial coordinate follows the 24 mm globe surface rather
         than placing the trocar over the corneal/pupil observation aperture.
       -->
-      <body name="single_trocar_visual" pos="-0.00881760 0.00800 -0.00150">
+      <body name="single_trocar_visual" pos="-0.00881760 0.00800 -0.00150"
+            euler="0 0 0.3490658504">
         <geom name="trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_mat" contype="0" conaffinity="0"/>
         <geom name="trocar_lumen" type="cylinder" pos="-0.00127 0 0" euler="0 1.57079632679 0" size="0.00050 0.00006" material="lumen_mat" contype="0" conaffinity="0"/>
         <geom name="trocar_flange" type="cylinder" pos="-0.00138 0 0" euler="0 1.57079632679 0" size="0.00132 0.00012" material="trocar_mat" contype="0" conaffinity="0"/>
-        <site name="trocar_center" pos="0 0 0" size="0.00065" rgba="0.00 0.62 0.45 0.95"/>
+        <site name="trocar_center" pos="0 0 0" euler="0 1.57079632679 0"
+              size="0.00065" rgba="0.00 0.62 0.45 0.95"/>
       </body>
       <light name="intraocular_fill" pos="-0.004 0.000 0.000" dir="0.85 0 -0.05" cutoff="75" exponent="6" diffuse="0.52 0.55 0.50" specular="0.18 0.18 0.16"/>
     </body>

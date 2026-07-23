@@ -168,9 +168,10 @@ def annotate(
                 cv2.LINE_AA,
             )
     if compact_header:
-        cv2.rectangle(image, (8, 8), (width - 8, 82), (20, 20, 20), -1)
+        cv2.rectangle(image, (8, 8), (width - 8, 105), (20, 20, 20), -1)
         lines = [
             title,
+            "kinematic display only (not control input)",
             f"step={step} phase={phase}",
             f"extension={insertion_extension_mm:.3f}mm",
         ]
@@ -275,7 +276,7 @@ def main() -> None:
                 alignment_progress=alignment_progress,
                 insertion_extension_mm=extension,
             ),
-            title="FULL MECA500 KINEMATIC VIEW (not control input)",
+            title="FULL MECA500 | TROCAR 20deg | NEEDLE 36mm",
             phase=phase,
             step=step,
             metrics=metrics,
@@ -422,6 +423,8 @@ def main() -> None:
             "M4 NIH/HRA RGB-driven alignment and deterministic insertion baseline"
         ),
         "anatomy": NIH_HRA_EYE_SOURCE,
+        "trocar_tilt_deg": 20.0,
+        "presentation_needle_visible_length_mm": 36.0,
         "controller_inputs": [
             "eye_in_hand_rgb",
             "inner_outer_ellipse_geometry",
@@ -440,7 +443,7 @@ def main() -> None:
             "The insertion plant is Cartesian, not the full six-axis robot.",
             "The right video pane is a synchronized Meca500 kinematic presentation and is not the controller plant.",
             "MuJoCo contact uses a hidden axis-aligned square-wall proxy; analytic clearance uses the circular lumen contract.",
-            "Rotational visual correction remains pending; this scene starts with parallel camera and trocar axes.",
+            "The trocar is tilted 20 degrees, but rotational visual correction remains pending; this baseline starts with parallel camera and trocar axes.",
         ],
     }
     report_path = output_dir / "m4_full_flow_report.json"

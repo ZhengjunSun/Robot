@@ -105,15 +105,13 @@ class MujocoCoarseAlignmentPlant:
             "maximum_normal_force_n": 0.0,
         }
         camera_xy = initial_camera_xy_mm or self.initial_camera_xy_mm
-        self.mujoco.mj_forward(self.model, self.data)
-        camera_rotation = np.asarray(
-            self.data.cam_xmat[self.camera_id], dtype=np.float64
-        ).reshape(3, 3)
-        world_offset_mm = (
-            camera_rotation[:, 0] * float(camera_xy[0])
-            + camera_rotation[:, 1] * float(camera_xy[1])
-        )
-        self.data.qpos[:3] = world_offset_mm * 1e-3
+        # The first three slide joints are expressed in the tool/camera frame.
+        # Keeping commands in that frame also works when the entire carriage is
+        # mounted coaxially with a non-vertical trocar.
+        self.data.qpos[:3] = np.asarray(
+            [float(camera_xy[0]), float(camera_xy[1]), 0.0],
+            dtype=np.float64,
+        ) * 1e-3
         self.data.ctrl[:3] = self.data.qpos[:3]
         self.data.qvel[:3] = 0.0
         self.mujoco.mj_forward(self.model, self.data)
@@ -243,17 +241,14 @@ class MujocoCoarseAlignmentPlant:
         self, command_mm: tuple[float, float, float]
     ) -> None:
         camera_x_mm, camera_y_mm, camera_z_mm = command_mm
-        camera_rotation = np.asarray(
-            self.data.cam_xmat[self.camera_id], dtype=np.float64
-        ).reshape(3, 3)
-        world_step_mm = (
-            camera_rotation[:, 0] * camera_x_mm
-            + camera_rotation[:, 1] * camera_y_mm
-            + camera_rotation[:, 2] * camera_z_mm
+        camera_frame_step_mm = (
+            float(camera_x_mm),
+            float(camera_y_mm),
+            float(camera_z_mm),
         )
-        for index in range(3):
+        for index, step_mm in enumerate(camera_frame_step_mm):
             self.data.ctrl[index] = np.clip(
-                self.data.qpos[index] + world_step_mm[index] * 1e-3,
+                self.data.qpos[index] + step_mm * 1e-3,
                 self.model.jnt_range[index, 0],
                 self.model.jnt_range[index, 1],
             )

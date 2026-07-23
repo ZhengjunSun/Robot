@@ -65,8 +65,13 @@
             material="pupil_mat"/>
     </body>
 
-    <!-- Pars-plana-style entry: 8 mm from the pupil axis on the 24 mm globe. -->
-    <body name="frozen_trocar" pos="-0.0015 0.008 0.0498176">
+    <!--
+      Pars-plana-style entry: 8 mm from the pupil axis on the 24 mm globe.
+      The port axis is tilted 20 degrees in the y-z plane instead of using the
+      former, clinically unrealistic vertical orientation.
+    -->
+    <body name="frozen_trocar" pos="-0.0015 0.007658 0.0507573"
+          euler="0.3490658504 0 0">
       <geom name="trocar_outer_wall" type="cylinder"
             size="0.0010 0.00125" material="trocar_mat"/>
       <geom name="trocar_flange" type="cylinder" pos="0 0 0.00137"
@@ -92,7 +97,12 @@
     </body>
 
     <!-- Lightweight Cartesian plant for M0/M1 perception/control isolation. -->
-    <body name="tool_carriage" pos="-0.0015 0.008 0.105">
+    <!--
+      The current translational baseline starts coaxial with the tilted port.
+      Active rotational visual servo remains a later M3 extension.
+    -->
+    <body name="tool_carriage" pos="-0.0015 -0.011221 0.1026257"
+          euler="0.3490658504 0 0">
       <joint name="tool_x" type="slide" axis="1 0 0" range="-0.020 0.020"/>
       <joint name="tool_y" type="slide" axis="0 1 0" range="-0.020 0.020"/>
       <joint name="tool_z" type="slide" axis="0 0 1" range="-0.020 0.020"/>
