@@ -12,74 +12,70 @@
   → 传统插入控制器交接
 ```
 
-“三线合一”不是单纯让三个二维点重合，而是同时检查：
+“三线合一”不是单纯让三个二维点重合，而是同时检查摄像头光轴、戳卡外环中心和
+实际内通道轴线，并约束横向误差、轴角、悬停距离、重投影误差和连续稳定帧数。
+强化学习只在传统闭环冻结后研究有界残差，不替代硬质量门和最终插入授权。
 
-- 摄像头光轴与戳卡外环中心的像素误差；
-- 内外环同心度；
-- 横向位置误差；
-- 摄像头光轴与戳卡通道轴夹角；
-- 悬停距离及重投影误差；
-- 连续多帧稳定性。
+## 当前仿真基准
 
-强化学习用于优化对准路径、六轴耦合、阶段切换和收敛效率；硬质量门、工作空间约束和
-最终插入授权不交给无约束策略。
+- 眼球：NIH 3D / HRA Visible Human female right eye v1.2；
+- 戳卡冻结合同：外径 2.0 mm、内径 1.0 mm、壁长 2.5 mm、法兰外径 2.64 mm；
+- M0：统一 RGB 感知—控制—评价入口已完成第一版；
+- M1：传统颜色/轮廓检测 + IBVS 粗对准已完成；
+- M2：YOLO 共用粗观测接口、合成数据生成、训练和在线闭环已完成第一版；
+- M3：NIH 场景内外环/PnP 精对准闭环待接入；
+- M4：连续稳定验收和既有插入控制器交接待完成。
+
+控制动作只读取 eye-in-hand RGB 检测结果。MuJoCo 目标真值只用于评价，特权几何分割
+只用于生成训练标签，不进入在线控制器。
 
 ## 目录
 
 | 路径 | 内容 |
 | --- | --- |
-| `real_3d_alignment/` | 核心视觉对准、阶段状态机、质量门和执行桥 |
-| `yolo_perception/` | YOLO 数据与检测审计 |
-| `3d_modeling/scripts/` | 圆环/PnP、手眼标定、姿态过滤和仿真工具 |
-| `3d_modeling/mujoco/` | Meca500、eye-in-hand、眼球和戳卡场景 |
-| `single_arm_precision_rl/` | 精简保留的传统插入与残差环境基线 |
-| `config/` | 对准、插入和视觉合同 |
-| `tests/` | 核心状态机与接口测试 |
-| `docs/` | 项目方向、实施计划和当前状态 |
+| `real_3d_alignment/` | 视觉对准、阶段状态机、质量门和执行桥 |
+| `yolo_perception/` | YOLO 粗检测适配器和审计工具 |
+| `3d_modeling/mujoco/` | MuJoCo 机械臂、eye-in-hand、NIH 眼球和戳卡场景 |
+| `3d_modeling/external_assets/` | NIH/HRA 可追溯视觉资产及审计记录 |
+| `single_arm_precision_rl/` | 保留的插入环境、传统基线和残差研究资产 |
+| `config/` | 对准、插入、感知合同及模型复现清单 |
+| `tests/` | 状态机、视觉检测、MuJoCo 闭环和 YOLO 适配测试 |
+| `docs/` | 项目方向、里程碑计划、状态和实验记录 |
 
 ## 快速验证
 
 ```powershell
-python -m pip install -r requirements-core.txt
-$env:PYTHONPATH=(Get-Location).Path
+python -m pip install -r requirements-simulation.txt
 python -m pytest -q
 ```
 
-离线图像 dry-run：
+运行 NIH 场景传统粗对准：
 
 ```powershell
-python run_real_3d_alignment.py --help
+python run_mujoco_coarse_alignment.py --detector traditional
+python run_mujoco_coarse_batch.py --episodes 100 --detector traditional
 ```
 
-所有统一入口默认在真实运动前停止。模型权重、数据集、训练输出、论文构建物和原项目
-历史报告不存入本仓库。
-
-## 当前状态
-
-- 分级对准状态机：已实现；
-- 连续多帧三线合一验收：已实现；
-- 现有圆环/PnP/手眼链：已保留；
-- M0 统一 RGB 视觉闭环接口：已实现第一版；
-- M1 传统圆环检测 + IBVS MuJoCo 粗对准：已实现第一版；
-- YOLO 与统一粗观测接口：待接入；
-- 内外环/PnP 细对准闭环：待接入；
-- 传统两级对准正式基线：待冻结；
-- 对准残差强化学习：待基线通过后启动；
-- 双臂协同：等待单臂全流程通过。
-
-运行当前 M1 传统视觉粗对准：
+生成数据、训练 YOLO 并运行 M2 闭环：
 
 ```powershell
-python run_mujoco_coarse_alignment.py
+python generate_nih_yolo_dataset.py
+python train_nih_yolo.py --epochs 30
+python run_mujoco_coarse_alignment.py `
+  --detector yolo `
+  --yolo-target-classes 0 `
+  --yolo-model output/yolo_nih_hra_m2_training/yolo11n_nih_hra_trocar/weights/best.pt
 ```
 
-该入口只用 eye-in-hand RGB 生成控制动作；MuJoCo 真值只记录为评估指标。当前使用轻量
-笛卡尔执行代理和红色圆环，尚不等于完整六轴、YOLO、精对准或插入闭环。
+数据集、权重、视频和实验输出位于 `output/`，不会提交到核心代码仓库。已验证模型的
+哈希和证据边界记录在 `config/yolo_nih_hra_m2_model_manifest.json`。
 
-详见 [项目方向](docs/project/PROJECT_DIRECTION_20260723.md)和
-[实施计划](docs/plans/VISUAL_ALIGNMENT_AND_INSERTION_PLAN_20260723.md)。
+详见
+[实施计划](docs/plans/VISUAL_ALIGNMENT_AND_INSERTION_PLAN_20260723.md)、
+[当前状态](docs/handoffs/CURRENT_PROJECT_STATUS_20260723.md)和
+[M1/M2 NIH 基线记录](docs/experiments/M1_M2_NIH_HRA_BASELINE_20260723.md)。
 
 ## 安全边界
 
-本仓库不构成临床软件。未经现场标定、TCP/跟踪误差测量、碰撞检查、人工批准和独立
-硬件验证，不得启用自主真实运动或把仿真零碰壁结果表述为真机安全证明。
+本仓库不构成临床软件。未经真实相机标定、TCP/跟踪误差测量、碰撞检查、人工批准和
+独立硬件验证，不得启用自主真实运动，也不得把仿真无碰壁结果表述为真机安全证明。

@@ -1,22 +1,17 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 pytest.importorskip("mujoco")
 
-from real_3d_alignment.coarse_vision import (
-    CoarseImageBasedVisualServo,
-    CoarseServoConfig,
-    TraditionalRingDetector,
+from real_3d_alignment.nih_baseline import (
+    NIH_HRA_SCENE,
+    build_nih_coarse_gate,
+    build_nih_coarse_servo,
+    build_nih_traditional_detector,
 )
 from real_3d_alignment.mujoco_visual_env import MujocoCoarseAlignmentPlant
-from real_3d_alignment.staged_alignment import (
-    AlignmentPhase,
-    AlignmentThresholds,
-    StagedAlignmentGate,
-)
+from real_3d_alignment.staged_alignment import AlignmentPhase
 from real_3d_alignment.visual_loop import StagedVisualAlignmentLoop
 
 
@@ -32,30 +27,18 @@ from real_3d_alignment.visual_loop import StagedVisualAlignmentLoop
 def test_mujoco_rgb_coarse_loop_reaches_fine_region(
     initial_yz_mm: tuple[float, float],
 ) -> None:
-    root = Path(__file__).resolve().parents[1]
     plant = MujocoCoarseAlignmentPlant(
-        root
-        / "3d_modeling"
-        / "mujoco"
-        / "single_arm_trocar_visual_alignment.xml",
+        NIH_HRA_SCENE,
         image_size_px=(320, 240),
-        initial_lateral_yz_mm=initial_yz_mm,
+        initial_camera_xy_mm=initial_yz_mm,
         settle_steps=20,
     )
     try:
         loop = StagedVisualAlignmentLoop(
             plant=plant,
-            coarse_detector=TraditionalRingDetector(),
-            coarse_servo=CoarseImageBasedVisualServo(
-                CoarseServoConfig(
-                    focal_length_px=312.7,
-                    gain=0.65,
-                    maximum_step_mm=1.5,
-                )
-            ),
-            gate=StagedAlignmentGate(
-                AlignmentThresholds(coarse_to_fine_center_error_px=8.0)
-            ),
+            coarse_detector=build_nih_traditional_detector(),
+            coarse_servo=build_nih_coarse_servo(240),
+            gate=build_nih_coarse_gate(transition_center_error_px=8.0),
         )
 
         result = loop.run(maximum_steps=30)

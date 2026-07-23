@@ -13,8 +13,15 @@ class MujocoCoarseAlignmentPlant:
         xml_path: str | Path,
         *,
         image_size_px: tuple[int, int] = (640, 480),
-        initial_lateral_yz_mm: tuple[float, float] = (7.0, -5.0),
+        initial_camera_xy_mm: tuple[float, float] = (7.0, -5.0),
         settle_steps: int = 20,
+        camera_name: str = "eye_in_hand",
+        evaluation_target_site: str = "trocar_center_evaluation_only",
+        trocar_geom_names: tuple[str, ...] = (
+            "trocar_outer_wall",
+            "trocar_flange",
+            "trocar_lumen_visual",
+        ),
     ):
         try:
             import mujoco
@@ -30,18 +37,48 @@ class MujocoCoarseAlignmentPlant:
         self.width = int(width)
         self.height = int(height)
         self.settle_steps = int(settle_steps)
-        self.initial_lateral_yz_mm = initial_lateral_yz_mm
+        self.initial_camera_xy_mm = initial_camera_xy_mm
+        self.camera_name = str(camera_name)
+        self.evaluation_target_site = str(evaluation_target_site)
+        self.camera_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_CAMERA, self.camera_name
+        )
+        self.target_site_id = mujoco.mj_name2id(
+            self.model,
+            mujoco.mjtObj.mjOBJ_SITE,
+            self.evaluation_target_site,
+        )
+        if self.camera_id < 0 or self.target_site_id < 0:
+            raise ValueError(
+                "MuJoCo visual plant requires the configured camera and "
+                "evaluation-only target site."
+            )
+        self.trocar_geom_ids = tuple(
+            mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_GEOM, geom_name
+            )
+            for geom_name in trocar_geom_names
+        )
+        if any(geom_id < 0 for geom_id in self.trocar_geom_ids):
+            raise ValueError("Configured trocar segmentation geoms are missing.")
+        self.eye_scene_option = mujoco.MjvOption()
+        self.eye_scene_option.geomgroup[1] = 0
         self.reset()
 
     def reset(
-        self, initial_lateral_yz_mm: tuple[float, float] | None = None
+        self, initial_camera_xy_mm: tuple[float, float] | None = None
     ) -> None:
         self.mujoco.mj_resetData(self.model, self.data)
-        lateral_yz = initial_lateral_yz_mm or self.initial_lateral_yz_mm
-        self.data.qpos[:3] = np.asarray(
-            [0.0, lateral_yz[0] * 1e-3, lateral_yz[1] * 1e-3],
-            dtype=np.float64,
+        camera_xy = initial_camera_xy_mm or self.initial_camera_xy_mm
+        self.mujoco.mj_forward(self.model, self.data)
+        camera_rotation = np.asarray(
+            self.data.cam_xmat[self.camera_id], dtype=np.float64
+        ).reshape(3, 3)
+        world_offset_mm = (
+            camera_rotation[:, 0] * float(camera_xy[0])
+            + camera_rotation[:, 1] * float(camera_xy[1])
         )
+        self.data.qpos[:3] = world_offset_mm * 1e-3
         self.data.ctrl[:3] = self.data.qpos[:3]
         self.data.qvel[:3] = 0.0
         self.mujoco.mj_forward(self.model, self.data)
@@ -56,32 +93,63 @@ class MujocoCoarseAlignmentPlant:
         self.mujoco.mj_forward(self.model, self.data)
 
     def capture_rgb(self) -> np.ndarray:
-        self.renderer.update_scene(self.data, camera="eye_in_hand")
+        self.renderer.update_scene(
+            self.data,
+            camera=self.camera_name,
+            scene_option=self.eye_scene_option,
+        )
         return self.renderer.render().copy()
 
     def capture_overview_rgb(self) -> np.ndarray:
         self.renderer.update_scene(self.data, camera="overview")
         return self.renderer.render().copy()
 
+    def capture_trocar_segmentation_mask(self) -> np.ndarray:
+        """Return privileged trocar pixels for dataset labels/evaluation only."""
+
+        self.renderer.enable_segmentation_rendering()
+        try:
+            self.renderer.update_scene(
+                self.data,
+                camera=self.camera_name,
+                scene_option=self.eye_scene_option,
+            )
+            segmentation = self.renderer.render().copy()
+        finally:
+            self.renderer.disable_segmentation_rendering()
+        object_ids = segmentation[:, :, 0]
+        return np.isin(object_ids, self.trocar_geom_ids)
+
     def apply_camera_xy_step(self, command_mm: tuple[float, float]) -> None:
         camera_x_mm, camera_y_mm = command_mm
-        # Camera +x is world -y; camera +y is world +z.
-        self.data.ctrl[1] = np.clip(
-            self.data.qpos[1] - camera_x_mm * 1e-3,
-            self.model.jnt_range[1, 0],
-            self.model.jnt_range[1, 1],
+        camera_rotation = np.asarray(
+            self.data.cam_xmat[self.camera_id], dtype=np.float64
+        ).reshape(3, 3)
+        world_step_mm = (
+            camera_rotation[:, 0] * camera_x_mm
+            + camera_rotation[:, 1] * camera_y_mm
         )
-        self.data.ctrl[2] = np.clip(
-            self.data.qpos[2] + camera_y_mm * 1e-3,
-            self.model.jnt_range[2, 0],
-            self.model.jnt_range[2, 1],
-        )
+        for index in range(3):
+            self.data.ctrl[index] = np.clip(
+                self.data.qpos[index] + world_step_mm[index] * 1e-3,
+                self.model.jnt_range[index, 0],
+                self.model.jnt_range[index, 1],
+            )
         self._settle()
 
     def evaluation_lateral_error_mm(self) -> float:
         """Privileged metric for evaluation only; never used by the controller."""
 
-        return float(np.linalg.norm(self.data.qpos[1:3]) * 1000.0)
+        camera_rotation = np.asarray(
+            self.data.cam_xmat[self.camera_id], dtype=np.float64
+        ).reshape(3, 3)
+        optical_axis = -camera_rotation[:, 2]
+        delta = (
+            np.asarray(self.data.site_xpos[self.target_site_id], dtype=np.float64)
+            - np.asarray(self.data.cam_xpos[self.camera_id], dtype=np.float64)
+        )
+        lateral = delta - float(np.dot(delta, optical_axis)) * optical_axis
+        return float(np.linalg.norm(lateral) * 1000.0)
 
     def close(self) -> None:
         self.renderer.close()

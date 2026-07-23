@@ -1,0 +1,5 @@
+-r requirements-core.txt
+mujoco
+
+# Optional M2 detector training and inference.
+ultralytics

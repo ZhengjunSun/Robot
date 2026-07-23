@@ -9,28 +9,25 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from real_3d_alignment.coarse_vision import (
-    CoarseImageBasedVisualServo,
-    CoarseServoConfig,
-    TraditionalRingDetector,
-)
 from real_3d_alignment.mujoco_visual_env import MujocoCoarseAlignmentPlant
-from real_3d_alignment.staged_alignment import (
-    AlignmentDecision,
-    AlignmentThresholds,
-    StagedAlignmentGate,
+from real_3d_alignment.nih_baseline import (
+    NIH_HRA_EYE_SOURCE,
+    NIH_HRA_SCENE,
+    build_nih_coarse_gate,
+    build_nih_coarse_servo,
+    build_nih_traditional_detector,
 )
+from real_3d_alignment.staged_alignment import AlignmentDecision
 from real_3d_alignment.visual_loop import StagedVisualAlignmentLoop, VisualLoopRecord
+from yolo_perception.coarse_detector import (
+    YoloCoarseDetector,
+    YoloCoarseDetectorConfig,
+)
 
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_XML = (
-    ROOT
-    / "3d_modeling"
-    / "mujoco"
-    / "single_arm_trocar_visual_alignment.xml"
-)
-DEFAULT_OUTPUT = ROOT / "output" / "mujoco_coarse_alignment_m1"
+DEFAULT_XML = NIH_HRA_SCENE
+DEFAULT_OUTPUT = ROOT / "output" / "mujoco_coarse_alignment_m1_nih_hra"
 
 
 def annotate(
@@ -41,6 +38,7 @@ def annotate(
     error_px: float | None,
     lateral_error_mm: float,
     phase: str,
+    detector_name: str,
 ) -> np.ndarray:
     image = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
     height, width = image.shape[:2]
@@ -56,7 +54,7 @@ def annotate(
         cv2.circle(image, tuple(int(round(value)) for value in center), 7, (40, 255, 40), 2)
     cv2.rectangle(image, (8, 8), (510, 108), (20, 20, 20), -1)
     lines = [
-        "M1 RGB-driven traditional coarse alignment",
+        f"RGB-driven {detector_name} coarse alignment",
         f"step={step} phase={phase}",
         f"pixel_error={error_px if error_px is not None else 'missing'}",
         f"privileged_eval_lateral={lateral_error_mm:.3f} mm",
@@ -77,16 +75,27 @@ def annotate(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run the M1 traditional RGB-driven MuJoCo coarse alignment baseline."
+        description="Run an RGB-driven MuJoCo coarse-alignment baseline."
     )
     parser.add_argument("--xml", type=Path, default=DEFAULT_XML)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--initial-y-mm", type=float, default=7.0)
-    parser.add_argument("--initial-z-mm", type=float, default=-5.0)
+    parser.add_argument("--initial-camera-x-mm", type=float, default=7.0)
+    parser.add_argument("--initial-camera-y-mm", type=float, default=-5.0)
     parser.add_argument("--maximum-steps", type=int, default=80)
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
     parser.add_argument("--fps", type=int, default=12)
+    parser.add_argument(
+        "--detector",
+        choices=("traditional", "yolo"),
+        default="traditional",
+    )
+    parser.add_argument("--yolo-model", type=Path, default=None)
+    parser.add_argument(
+        "--yolo-target-classes",
+        default="0,1",
+        help="Comma-separated YOLO class ids accepted as the trocar ROI.",
+    )
     args = parser.parse_args()
 
     output_dir = args.output_dir.resolve()
@@ -94,21 +103,34 @@ def main() -> None:
     plant = MujocoCoarseAlignmentPlant(
         args.xml,
         image_size_px=(args.width, args.height),
-        initial_lateral_yz_mm=(args.initial_y_mm, args.initial_z_mm),
+        initial_camera_xy_mm=(
+            args.initial_camera_x_mm,
+            args.initial_camera_y_mm,
+        ),
     )
-    detector = TraditionalRingDetector()
-    focal_px = 0.5 * args.height / np.tan(np.deg2rad(41.9741) / 2.0)
-    servo = CoarseImageBasedVisualServo(
-        CoarseServoConfig(
-            focal_length_px=float(focal_px),
-            maximum_step_mm=1.5,
+    if args.detector == "traditional":
+        detector = build_nih_traditional_detector()
+    else:
+        if args.yolo_model is None:
+            plant.close()
+            raise ValueError("--yolo-model is required when --detector=yolo.")
+        target_classes = tuple(
+            int(value.strip())
+            for value in args.yolo_target_classes.split(",")
+            if value.strip()
         )
-    )
-    gate = StagedAlignmentGate(
-        AlignmentThresholds(coarse_to_fine_center_error_px=12.0)
-    )
+        detector = YoloCoarseDetector.from_weights(
+            args.yolo_model,
+            YoloCoarseDetectorConfig(
+                target_class_ids=target_classes,
+                minimum_confidence=0.25,
+                image_size=max(args.width, args.height),
+            ),
+        )
+    servo = build_nih_coarse_servo(args.height)
+    gate = build_nih_coarse_gate(transition_center_error_px=12.0)
 
-    video_path = output_dir / "m1_traditional_coarse_alignment.mp4"
+    video_path = output_dir / f"m2_{args.detector}_coarse_alignment.mp4"
     writer = cv2.VideoWriter(
         str(video_path),
         cv2.VideoWriter_fourcc(*"mp4v"),
@@ -138,6 +160,7 @@ def main() -> None:
             error_px=record.center_error_px,
             lateral_error_mm=lateral_error,
             phase=decision.phase.value,
+            detector_name=args.detector,
         )
         writer.write(frame)
         evaluation_records.append(
@@ -164,13 +187,32 @@ def main() -> None:
         writer.release()
         plant.close()
 
+    milestone = "M1" if args.detector == "traditional" else "M2"
     report = {
         "timestamp": datetime.now().isoformat(),
-        "evidence_level": "M1 RGB-driven MuJoCo coarse-alignment baseline",
+        "evidence_level": (
+            f"{milestone} RGB-driven NIH/HRA MuJoCo coarse-alignment baseline"
+        ),
+        "anatomy": {
+            "source": NIH_HRA_EYE_SOURCE,
+            "use": "visual_only",
+        },
+        "trocar_contract": {
+            "outer_diameter_mm": 2.0,
+            "inner_diameter_mm": 1.0,
+            "wall_length_mm": 2.5,
+            "flange_outer_diameter_mm": 2.64,
+        },
         "controller_inputs": [
             "eye_in_hand_rgb",
-            "traditional_red_ring_detection",
+            f"{args.detector}_trocar_detection",
         ],
+        "detector": args.detector,
+        "yolo_model": None if args.yolo_model is None else str(args.yolo_model),
+        "perception_rendering": {
+            "shaft_visual_hidden": True,
+            "reason": "M1 perception isolation; collision and overview retain shaft",
+        },
         "privileged_truth_used_for_control": False,
         "privileged_truth_use": "evaluation_only",
         "stop_reason": result.stop_reason,
@@ -178,7 +220,7 @@ def main() -> None:
         "visual_loop": result.to_dict(),
         "evaluation_records": evaluation_records,
     }
-    report_path = output_dir / "m1_coarse_alignment_report.json"
+    report_path = output_dir / f"{milestone.lower()}_coarse_alignment_report.json"
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Stop reason: {result.stop_reason}")
     print(f"Steps: {len(result.records)}")

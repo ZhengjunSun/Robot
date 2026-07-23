@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "purpose": "M2 NIH/HRA synthetic trocar coarse-detector reproducibility record",
+  "architecture": "YOLO11n",
+  "training_epochs_completed": 5,
+  "training_stop_reason": "CPU run was stopped after validation convergence; best checkpoint was retained",
+  "dataset": {
+    "generator": "generate_nih_yolo_dataset.py",
+    "seed": 20260724,
+    "train_images": 240,
+    "validation_images": 60,
+    "independent_test_images": 60,
+    "label_source": "MuJoCo privileged geom segmentation, training labels only"
+  },
+  "checkpoint": {
+    "tracked_in_git": false,
+    "relative_local_path": "output/yolo_nih_hra_m2_training/yolo11n_nih_hra_trocar/weights/best.pt",
+    "bytes": 16047265,
+    "sha256": "cda6585d926b4d647dad7c43a37e2750e91cfa994f0bfc4269836e1b8f90f678"
+  },
+  "synthetic_independent_test": {
+    "precision": 0.9980964383609026,
+    "recall": 1.0,
+    "map50": 0.995,
+    "map50_95": 0.898095068361582
+  },
+  "evidence_boundary": "Synthetic test metrics do not establish real-image or clinical generalization."
+}

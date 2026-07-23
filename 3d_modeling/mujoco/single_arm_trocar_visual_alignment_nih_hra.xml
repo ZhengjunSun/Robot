@@ -1,0 +1,111 @@
+<mujoco model="single_arm_trocar_visual_alignment_nih_hra">
+  <!--
+    M0/M1 RGB visual-servo baseline using the audited NIH/HRA Visible Human
+    female right-eye v1.2 asset (NIH 3DPX-020963). Anatomy is visual-only.
+    The trocar follows the frozen OD 2.0 mm / ID 1.0 mm / wall 2.5 mm contract.
+  -->
+  <compiler angle="radian" coordinate="local"
+            meshdir="../external_assets/nih_hra_eye/converted"/>
+  <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720"/>
+    <quality shadowsize="2048"/>
+    <map znear="0.002" zfar="1.0"/>
+    <headlight ambient="0.42 0.42 0.42" diffuse="0.48 0.48 0.48"/>
+  </visual>
+
+  <default>
+    <joint damping="0.20" armature="0.0002" limited="true"/>
+    <geom contype="0" conaffinity="0"/>
+  </default>
+
+  <asset>
+    <mesh name="hra_sclera_mesh" file="VH_F_sclera_R.obj"/>
+    <mesh name="hra_conjunctiva_mesh" file="VH_F_bulbar_conjunctiva_R.obj"/>
+    <mesh name="hra_limbus_mesh" file="VH_F_corneo_scleral_junction_R.obj"/>
+    <mesh name="hra_cornea_mesh" file="VH_F_cornea_R.obj"/>
+    <mesh name="hra_iris_mesh" file="VH_F_iris_R.obj"/>
+    <mesh name="hra_pupil_mesh" file="VH_F_pupil_R.obj"/>
+    <material name="sclera_mat" rgba="0.90 0.86 0.79 1"/>
+    <material name="conjunctiva_mat" rgba="0.98 0.86 0.82 0.45"/>
+    <material name="limbus_mat" rgba="0.42 0.30 0.19 1"/>
+    <material name="cornea_mat" rgba="0.54 0.82 0.92 0.16"/>
+    <material name="iris_mat" rgba="0.055 0.18 0.12 1"/>
+    <material name="pupil_mat" rgba="0.004 0.005 0.006 1"/>
+    <material name="trocar_mat" rgba="0.00 0.46 0.64 1"/>
+    <material name="lumen_mat" rgba="0.012 0.014 0.018 1"/>
+    <material name="tool_mat" rgba="0.55 0.61 0.68 1"/>
+    <material name="stage_mat" rgba="0.30 0.36 0.43 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="key_light" pos="-0.16 -0.20 0.30"
+           dir="0.3 0.35 -1" diffuse="0.95 0.95 0.92"/>
+    <light name="fill_light" pos="0.20 0.18 0.20"
+           dir="-0.4 -0.3 -0.8" diffuse="0.50 0.58 0.68"/>
+    <geom name="operating_support" type="cylinder" pos="0 0 0.026"
+          size="0.020 0.004" rgba="0.22 0.25 0.30 1"/>
+    <geom name="ground" type="plane" pos="0 0 0" size="0.4 0.4 0.01"
+          rgba="0.11 0.13 0.16 1"/>
+
+    <!-- NIH/HRA meshes are normalized to a 24 mm scleral diameter. -->
+    <body name="nih_hra_eye" pos="0 0 0.041">
+      <geom name="hra_sclera_visual" type="mesh" mesh="hra_sclera_mesh"
+            material="sclera_mat"/>
+      <geom name="hra_conjunctiva_visual" type="mesh"
+            mesh="hra_conjunctiva_mesh" material="conjunctiva_mat"/>
+      <geom name="hra_limbus_visual" type="mesh" mesh="hra_limbus_mesh"
+            material="limbus_mat"/>
+      <geom name="hra_cornea_visual" type="mesh" mesh="hra_cornea_mesh"
+            material="cornea_mat"/>
+      <geom name="hra_iris_visual" type="mesh" mesh="hra_iris_mesh"
+            material="iris_mat"/>
+      <geom name="hra_pupil_visual" type="mesh" mesh="hra_pupil_mesh"
+            material="pupil_mat"/>
+    </body>
+
+    <!-- Pars-plana-style entry: 8 mm from the pupil axis on the 24 mm globe. -->
+    <body name="frozen_trocar" pos="-0.0015 0.008 0.0498176">
+      <geom name="trocar_outer_wall" type="cylinder"
+            size="0.0010 0.00125" material="trocar_mat"/>
+      <geom name="trocar_flange" type="cylinder" pos="0 0 0.00137"
+            size="0.00132 0.00012" material="trocar_mat"/>
+      <geom name="trocar_lumen_visual" type="cylinder" pos="0 0 0.00150"
+            size="0.00050 0.00005" material="lumen_mat"/>
+      <site name="trocar_center_evaluation_only" pos="0 0 0.00150"
+            size="0.0001" rgba="0 0 0 0"/>
+    </body>
+
+    <!-- Lightweight Cartesian plant for M0/M1 perception/control isolation. -->
+    <body name="tool_carriage" pos="-0.0015 0.008 0.105">
+      <joint name="tool_x" type="slide" axis="1 0 0" range="-0.020 0.020"/>
+      <joint name="tool_y" type="slide" axis="0 1 0" range="-0.020 0.020"/>
+      <joint name="tool_z" type="slide" axis="0 0 1" range="-0.020 0.020"/>
+      <geom name="tool_carriage_visual" type="box" pos="0 0 0.008"
+            size="0.006 0.006 0.004" material="stage_mat"/>
+      <geom name="instrument_shaft" type="capsule"
+            fromto="0 0 0 0 0 -0.050" size="0.000255"
+            material="tool_mat" contype="1" conaffinity="1" group="1"/>
+      <site name="tool_tip" pos="0 0 -0.050" size="0.00035"
+            rgba="0.96 0.38 0.08 1"/>
+      <!-- Virtual coaxial eye-in-hand baseline; physical extrinsics remain pending.
+           The M1 RGB renderer hides visual group 1 (the shaft) to isolate
+           perception. Collision geometry and overview rendering retain it. -->
+      <camera name="eye_in_hand" mode="fixed" pos="0 0 0"
+              xyaxes="1 0 0 0 1 0" fovy="41.9741"/>
+    </body>
+
+    <camera name="overview" mode="fixed" pos="0.10 -0.13 0.14"
+            xyaxes="0.79 0.61 0 -0.35 0.45 0.82" fovy="38"/>
+  </worldbody>
+
+  <actuator>
+    <position name="tool_x_position" joint="tool_x" kp="800"
+              ctrlrange="-0.020 0.020"/>
+    <position name="tool_y_position" joint="tool_y" kp="800"
+              ctrlrange="-0.020 0.020"/>
+    <position name="tool_z_position" joint="tool_z" kp="800"
+              ctrlrange="-0.020 0.020"/>
+  </actuator>
+</mujoco>

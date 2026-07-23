@@ -1,0 +1,591 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-15T19:19:51",
+  "purpose": "Visual/anatomical reference layer; not a collision or clinical validation model.",
+  "source": {
+    "download_url": "https://ccf-ontology.hubmapconsortium.org/objects/v1.2/VH_F_Eye_R.glb",
+    "nih_entry_url": "https://3d.nih.gov/entries/3DPX-020963",
+    "license": "CC-BY",
+    "attribution": "Kristen Browne; Heidi Schlehlein. 2023. 3D Reference Organ for Eye, Female, Right v1.2. https://doi.org/10.48539/HBM745.RCGM.944.",
+    "input_path": "3d_modeling/external_assets/nih_hra_eye/hra_reference_eye_right_v1_2.glb",
+    "input_bytes": 9511360,
+    "sha256": "aade6c5f75f8ef48aa2a6062c8413fc9b8b08fc79b1bea45f93cae6c814f7e69"
+  },
+  "normalization": {
+    "original_scene_units": "meters",
+    "original_scene_extents_mm": [
+      24.492376,
+      24.496973,
+      25.391501
+    ],
+    "original_combined_bounds_m": [
+      [
+        -0.053708188,
+        0.753466904,
+        0.007893133
+      ],
+      [
+        -0.029215813,
+        0.777963877,
+        0.033284634
+      ]
+    ],
+    "sclera_center_m": [
+      -0.041462,
+      0.76571539,
+      0.019080033
+    ],
+    "uniform_scale": 0.9797128988226019,
+    "target_sclera_equatorial_diameter_mm": 24.0,
+    "normalized_sclera_extents_mm": [
+      23.995496,
+      24.0,
+      21.919901
+    ]
+  },
+  "component_count": 23,
+  "required_components_present": [
+    "VH_F_cornea_R",
+    "VH_F_fovea_R",
+    "VH_F_iris_R",
+    "VH_F_lens_R",
+    "VH_F_macula_lutea_R",
+    "VH_F_optic_choroid_R",
+    "VH_F_optic_disc_R",
+    "VH_F_pupil_R",
+    "VH_F_retina_R",
+    "VH_F_sclera_R"
+  ],
+  "components": {
+    "VH_F_sclera_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_sclera_R.obj",
+      "vertices": 9401,
+      "triangles": 18763,
+      "bounds_m": [
+        [
+          -0.011997748,
+          -0.012,
+          -0.01095995
+        ],
+        [
+          0.011997748,
+          0.012,
+          0.01095995
+        ]
+      ],
+      "extents_mm": [
+        23.995496,
+        24.0,
+        21.919901
+      ],
+      "watertight": false
+    },
+    "VH_F_iris_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_iris_R.obj",
+      "vertices": 2050,
+      "triangles": 4100,
+      "bounds_m": [
+        [
+          -0.004960193,
+          -0.005344555,
+          0.009196483
+        ],
+        [
+          0.005360158,
+          0.004979525,
+          0.010641312
+        ]
+      ],
+      "extents_mm": [
+        10.32035,
+        10.32408,
+        1.444829
+      ],
+      "watertight": true
+    },
+    "VH_F_schlemms_canal_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_schlemms_canal_R.obj",
+      "vertices": 12616,
+      "triangles": 25232,
+      "bounds_m": [
+        [
+          -0.005056578,
+          -0.005352672,
+          0.009730717
+        ],
+        [
+          0.005310788,
+          0.005002416,
+          0.009879746
+        ]
+      ],
+      "extents_mm": [
+        10.367366,
+        10.355088,
+        0.149029
+      ],
+      "watertight": true
+    },
+    "VH_F_trabecular_meshwork_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_trabecular_meshwork_R.obj",
+      "vertices": 19936,
+      "triangles": 39872,
+      "bounds_m": [
+        [
+          -0.005069191,
+          -0.005348759,
+          0.009541921
+        ],
+        [
+          0.005278762,
+          0.004984138,
+          0.009864251
+        ]
+      ],
+      "extents_mm": [
+        10.347953,
+        10.332898,
+        0.32233
+      ],
+      "watertight": true
+    },
+    "VH_F_optic_choroid_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_optic_choroid_R.obj",
+      "vertices": 5893,
+      "triangles": 11786,
+      "bounds_m": [
+        [
+          -0.010949378,
+          -0.010946079,
+          -0.009880741
+        ],
+        [
+          0.010936148,
+          0.010941699,
+          0.0085482
+        ]
+      ],
+      "extents_mm": [
+        21.885527,
+        21.887779,
+        18.428942
+      ],
+      "watertight": true
+    },
+    "VH_F_ciliary_body_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_ciliary_body_R.obj",
+      "vertices": 62691,
+      "triangles": 125382,
+      "bounds_m": [
+        [
+          -0.007062914,
+          -0.007547815,
+          0.007834935
+        ],
+        [
+          0.007672975,
+          0.007165091,
+          0.009524441
+        ]
+      ],
+      "extents_mm": [
+        14.735888,
+        14.712906,
+        1.689506
+      ],
+      "watertight": true
+    },
+    "VH_F_ciliary_muscle_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_ciliary_muscle_R.obj",
+      "vertices": 27387,
+      "triangles": 54614,
+      "bounds_m": [
+        [
+          -0.007009584,
+          -0.007474412,
+          0.007917665
+        ],
+        [
+          0.007594958,
+          0.007130988,
+          0.00942144
+        ]
+      ],
+      "extents_mm": [
+        14.604542,
+        14.6054,
+        1.503776
+      ],
+      "watertight": false
+    },
+    "VH_F_aqueous_humor_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_aqueous_humor_R.obj",
+      "vertices": 2853,
+      "triangles": 5697,
+      "bounds_m": [
+        [
+          -0.004695687,
+          -0.005295853,
+          0.009296564
+        ],
+        [
+          0.005109667,
+          0.005160084,
+          0.01245114
+        ]
+      ],
+      "extents_mm": [
+        9.805353,
+        10.455937,
+        3.154576
+      ],
+      "watertight": false
+    },
+    "VH_F_cornea_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_cornea_R.obj",
+      "vertices": 9614,
+      "triangles": 19224,
+      "bounds_m": [
+        [
+          -0.005935199,
+          -0.005972014,
+          0.009997654
+        ],
+        [
+          0.006047019,
+          0.006070644,
+          0.01357703
+        ]
+      ],
+      "extents_mm": [
+        11.982219,
+        12.042658,
+        3.579376
+      ],
+      "watertight": true
+    },
+    "VH_F_lens_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_lens_R.obj",
+      "vertices": 844,
+      "triangles": 1684,
+      "bounds_m": [
+        [
+          -0.003584473,
+          -0.004054016,
+          0.006917291
+        ],
+        [
+          0.003972609,
+          0.003691497,
+          0.010635868
+        ]
+      ],
+      "extents_mm": [
+        7.557082,
+        7.745513,
+        3.718578
+      ],
+      "watertight": true
+    },
+    "VH_F_pupil_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_pupil_R.obj",
+      "vertices": 591,
+      "triangles": 960,
+      "bounds_m": [
+        [
+          -0.00131189,
+          -0.001728476,
+          0.010536452
+        ],
+        [
+          0.001769371,
+          0.001351183,
+          0.010710162
+        ]
+      ],
+      "extents_mm": [
+        3.081261,
+        3.079659,
+        0.17371
+      ],
+      "watertight": false
+    },
+    "VH_F_corneo_scleral_junction_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_corneo_scleral_junction_R.obj",
+      "vertices": 2464,
+      "triangles": 4928,
+      "bounds_m": [
+        [
+          -0.005921728,
+          -0.005943283,
+          0.009947957
+        ],
+        [
+          0.006039921,
+          0.006072279,
+          0.011059204
+        ]
+      ],
+      "extents_mm": [
+        11.961649,
+        12.015562,
+        1.111247
+      ],
+      "watertight": true
+    },
+    "VH_F_ora_serrata_of_retina_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_ora_serrata_of_retina_R.obj",
+      "vertices": 6743,
+      "triangles": 13326,
+      "bounds_m": [
+        [
+          -0.00716012,
+          -0.007624955,
+          0.007911143
+        ],
+        [
+          0.007765809,
+          0.007302612,
+          0.008285009
+        ]
+      ],
+      "extents_mm": [
+        14.925929,
+        14.927568,
+        0.373866
+      ],
+      "watertight": true
+    },
+    "VH_F_suspensory_ligament_of_lens_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_suspensory_ligament_of_lens_R.obj",
+      "vertices": 6077,
+      "triangles": 10456,
+      "bounds_m": [
+        [
+          -0.00702315,
+          -0.007348394,
+          0.007927676
+        ],
+        [
+          0.007470802,
+          0.00714985,
+          0.009233066
+        ]
+      ],
+      "extents_mm": [
+        14.493952,
+        14.498244,
+        1.30539
+      ],
+      "watertight": false
+    },
+    "VH_F_ciliary_processes_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_ciliary_processes_R.obj",
+      "vertices": 13206,
+      "triangles": 25536,
+      "bounds_m": [
+        [
+          -0.006014376,
+          -0.006482974,
+          0.008189138
+        ],
+        [
+          0.006652649,
+          0.006135988,
+          0.009202051
+        ]
+      ],
+      "extents_mm": [
+        12.667026,
+        12.618962,
+        1.012913
+      ],
+      "watertight": false
+    },
+    "VH_F_retina_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_retina_R.obj",
+      "vertices": 5455,
+      "triangles": 10806,
+      "bounds_m": [
+        [
+          -0.010768305,
+          -0.010808499,
+          -0.009703486
+        ],
+        [
+          0.010843312,
+          0.010760557,
+          0.008313454
+        ]
+      ],
+      "extents_mm": [
+        21.611617,
+        21.569056,
+        18.01694
+      ],
+      "watertight": false
+    },
+    "VH_F_fovea_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_fovea_R.obj",
+      "vertices": 115,
+      "triangles": 226,
+      "bounds_m": [
+        [
+          -0.000719227,
+          -0.000703577,
+          -0.009765629
+        ],
+        [
+          0.000299171,
+          0.000310576,
+          -0.009339379
+        ]
+      ],
+      "extents_mm": [
+        1.018398,
+        1.014154,
+        0.426249
+      ],
+      "watertight": true
+    },
+    "VH_F_macula_lutea_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_macula_lutea_R.obj",
+      "vertices": 1112,
+      "triangles": 2224,
+      "bounds_m": [
+        [
+          -0.002104889,
+          -0.002076221,
+          -0.009766997
+        ],
+        [
+          0.001691803,
+          0.001639423,
+          -0.009058081
+        ]
+      ],
+      "extents_mm": [
+        3.796693,
+        3.715643,
+        0.708916
+      ],
+      "watertight": true
+    },
+    "VH_F_optic_disc_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_optic_disc_R.obj",
+      "vertices": 4725,
+      "triangles": 9066,
+      "bounds_m": [
+        [
+          -0.001574268,
+          -0.003866099,
+          -0.009530393
+        ],
+        [
+          0.000195665,
+          -0.002092688,
+          -0.00856115
+        ]
+      ],
+      "extents_mm": [
+        1.769933,
+        1.773411,
+        0.969243
+      ],
+      "watertight": false
+    },
+    "VH_F_vitreous_humor_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_vitreous_humor_R.obj",
+      "vertices": 18734,
+      "triangles": 37464,
+      "bounds_m": [
+        [
+          -0.010563315,
+          -0.010619882,
+          -0.009611913
+        ],
+        [
+          0.010638583,
+          0.010604933,
+          0.008838004
+        ]
+      ],
+      "extents_mm": [
+        21.201899,
+        21.224815,
+        18.449917
+      ],
+      "watertight": true
+    },
+    "VH_F_bulbar_conjunctiva_R": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_bulbar_conjunctiva_R.obj",
+      "vertices": 8078,
+      "triangles": 16062,
+      "bounds_m": [
+        [
+          -0.008425221,
+          -0.00894405,
+          0.009011649
+        ],
+        [
+          0.008772115,
+          0.008032614,
+          0.010981299
+        ]
+      ],
+      "extents_mm": [
+        17.197336,
+        16.976664,
+        1.969651
+      ],
+      "watertight": false
+    },
+    "VH_F_palpebral_conjunctiva_of_right_lower_eyelid": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_palpebral_conjunctiva_of_right_lower_eyelid.obj",
+      "vertices": 4435,
+      "triangles": 8694,
+      "bounds_m": [
+        [
+          -0.008590257,
+          -0.008915319,
+          0.009130149
+        ],
+        [
+          0.008877508,
+          0.00013685,
+          0.013916431
+        ]
+      ],
+      "extents_mm": [
+        17.467766,
+        9.052169,
+        4.786282
+      ],
+      "watertight": false
+    },
+    "VH_F_palpebral_conjunctiva_of_right_upper_eyelid": {
+      "path": "3d_modeling/external_assets/nih_hra_eye/converted/VH_F_palpebral_conjunctiva_of_right_upper_eyelid.obj",
+      "vertices": 4583,
+      "triangles": 8984,
+      "bounds_m": [
+        [
+          -0.008397899,
+          6.076e-05,
+          0.009207027
+        ],
+        [
+          0.008665847,
+          0.008017022,
+          0.013870791
+        ]
+      ],
+      "extents_mm": [
+        17.063746,
+        7.956262,
+        4.663765
+      ],
+      "watertight": false
+    }
+  },
+  "evidence_boundary": "The HRA mesh is used for anatomical geometry and visualization. The frozen trocar, needle, collision, clearance, and success criteria remain unchanged. Retinal vessels and tissue optics require separate measured or licensed data."
+}

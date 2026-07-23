@@ -24,6 +24,14 @@ class TraditionalRingDetectorConfig:
     saturation_minimum: int = 70
     value_minimum: int = 45
     morphology_kernel_px: int = 3
+    hue_ranges: tuple[tuple[int, int], ...] = ((0, 18), (165, 179))
+
+    def __post_init__(self) -> None:
+        if not self.hue_ranges:
+            raise ValueError("hue_ranges must contain at least one HSV range.")
+        for lower, upper in self.hue_ranges:
+            if not 0 <= lower <= upper <= 179:
+                raise ValueError("HSV hue ranges must stay within [0, 179].")
 
 
 class TraditionalRingDetector:
@@ -43,17 +51,14 @@ class TraditionalRingDetector:
 
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
         cfg = self.config
-        lower_red = cv2.inRange(
-            hsv,
-            (0, cfg.saturation_minimum, cfg.value_minimum),
-            (18, 255, 255),
-        )
-        upper_red = cv2.inRange(
-            hsv,
-            (165, cfg.saturation_minimum, cfg.value_minimum),
-            (179, 255, 255),
-        )
-        mask = cv2.bitwise_or(lower_red, upper_red)
+        mask = np.zeros(image.shape[:2], dtype=np.uint8)
+        for lower_hue, upper_hue in cfg.hue_ranges:
+            color_mask = cv2.inRange(
+                hsv,
+                (lower_hue, cfg.saturation_minimum, cfg.value_minimum),
+                (upper_hue, 255, 255),
+            )
+            mask = cv2.bitwise_or(mask, color_mask)
         kernel_size = max(1, int(cfg.morphology_kernel_px))
         kernel = np.ones((kernel_size, kernel_size), dtype=np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
