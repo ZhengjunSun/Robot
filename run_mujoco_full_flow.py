@@ -11,7 +11,11 @@ import numpy as np
 from real_3d_alignment.insertion_handoff import (
     TraditionalInsertionHandoffController,
 )
+from real_3d_alignment.meca500_presentation import (
+    Meca500PresentationRenderer,
+)
 from real_3d_alignment.mujoco_visual_env import MujocoCoarseAlignmentPlant
+from real_3d_alignment.fine_vision import FineRingEstimate
 from real_3d_alignment.nih_baseline import (
     NIH_HRA_EYE_SOURCE,
     NIH_HRA_SCENE,
@@ -38,22 +42,153 @@ def annotate(
     metrics: dict,
     insertion_extension_mm: float,
     reason: str,
+    fine_estimate: FineRingEstimate | None = None,
+    draw_alignment_centers: bool = False,
+    compact_header: bool = False,
 ) -> np.ndarray:
     image = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
-    cv2.rectangle(image, (8, 8), (image.shape[1] - 8, 130), (20, 20, 20), -1)
-    lines = [
-        title,
-        f"step={step} phase={phase}",
-        (
-            "fine={:.3f}px lateral={:.3f}mm axis={:.3f}deg".format(
-                float(metrics.get("optical_outer_error_px", float("nan"))),
-                float(metrics.get("lateral_error_mm", float("nan"))),
-                float(metrics.get("axis_error_deg", float("nan"))),
+    height, width = image.shape[:2]
+    camera_center = (width // 2, height // 2)
+    if draw_alignment_centers:
+        camera_color = (255, 255, 0)
+        outer_color = (0, 255, 0)
+        inner_color = (0, 165, 255)
+        cv2.drawMarker(
+            image,
+            camera_center,
+            camera_color,
+            cv2.MARKER_CROSS,
+            26,
+            2,
+        )
+        cv2.putText(
+            image,
+            "CAMERA CENTER",
+            (camera_center[0] - 145, camera_center[1] - 12),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.42,
+            camera_color,
+            1,
+            cv2.LINE_AA,
+        )
+        if fine_estimate is not None:
+            outer_center = tuple(
+                int(round(value))
+                for value in fine_estimate.observation.outer_center_px
             )
-        ),
-        f"extension={insertion_extension_mm:.3f}mm",
-        reason,
-    ]
+            inner_center = tuple(
+                int(round(value))
+                for value in fine_estimate.observation.inner_center_px
+            )
+            cv2.line(image, camera_center, outer_center, camera_color, 1)
+            cv2.line(image, outer_center, inner_center, (255, 255, 255), 1)
+            for (
+                center,
+                major,
+                minor,
+                angle,
+                color,
+                label,
+                label_offset,
+            ) in (
+                (
+                    outer_center,
+                    fine_estimate.outer_major_diameter_px,
+                    fine_estimate.outer_minor_diameter_px,
+                    fine_estimate.outer_angle_deg,
+                    outer_color,
+                    "OUTER CENTER",
+                    (12, 18),
+                ),
+                (
+                    inner_center,
+                    fine_estimate.inner_major_diameter_px,
+                    fine_estimate.inner_minor_diameter_px,
+                    fine_estimate.inner_angle_deg,
+                    inner_color,
+                    "INNER CENTER",
+                    (12, -12),
+                ),
+            ):
+                cv2.ellipse(
+                    image,
+                    center,
+                    (
+                        max(1, int(round(0.5 * major))),
+                        max(1, int(round(0.5 * minor))),
+                    ),
+                    float(angle),
+                    0,
+                    360,
+                    color,
+                    2,
+                )
+                cv2.circle(image, center, 4, color, -1)
+                cv2.putText(
+                    image,
+                    label,
+                    (center[0] + label_offset[0], center[1] + label_offset[1]),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.42,
+                    color,
+                    1,
+                    cv2.LINE_AA,
+                )
+        cv2.drawMarker(
+            image,
+            camera_center,
+            camera_color,
+            cv2.MARKER_CROSS,
+            26,
+            2,
+        )
+        cv2.rectangle(
+            image,
+            (8, height - 37),
+            (width - 8, height - 8),
+            (20, 20, 20),
+            -1,
+        )
+        legend = (
+            ("CAMERA", camera_color),
+            ("OUTER", outer_color),
+            ("INNER", inner_color),
+        )
+        for index, (label, color) in enumerate(legend):
+            x = 20 + 150 * index
+            cv2.circle(image, (x, height - 22), 4, color, -1)
+            cv2.putText(
+                image,
+                label,
+                (x + 10, height - 17),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.43,
+                color,
+                1,
+                cv2.LINE_AA,
+            )
+    if compact_header:
+        cv2.rectangle(image, (8, 8), (width - 8, 82), (20, 20, 20), -1)
+        lines = [
+            title,
+            f"step={step} phase={phase}",
+            f"extension={insertion_extension_mm:.3f}mm",
+        ]
+    else:
+        cv2.rectangle(image, (8, 8), (width - 8, 130), (20, 20, 20), -1)
+        lines = [
+            title,
+            f"step={step} phase={phase}",
+            (
+                "fine={:.3f}px lateral={:.3f}mm axis={:.3f}deg".format(
+                    float(metrics.get("optical_outer_error_px", float("nan"))),
+                    float(metrics.get("lateral_error_mm", float("nan"))),
+                    float(metrics.get("axis_error_deg", float("nan"))),
+                )
+            ),
+            f"extension={insertion_extension_mm:.3f}mm",
+            reason,
+        ]
     for index, line in enumerate(lines):
         cv2.putText(
             image,
@@ -94,6 +229,11 @@ def main() -> None:
     fine_detector = build_nih_fine_detector(args.height)
     gate = build_nih_m3_gate()
     insertion = TraditionalInsertionHandoffController()
+    presentation = Meca500PresentationRenderer(
+        width=args.width,
+        height=args.height,
+        target_extension_mm=insertion.target_extension_mm,
+    )
     video_path = output_dir / "m4_rgb_alignment_safe_insertion.mp4"
     writer = cv2.VideoWriter(
         str(video_path),
@@ -103,6 +243,7 @@ def main() -> None:
     )
     if not writer.isOpened():
         plant.close()
+        presentation.close()
         raise RuntimeError(f"Could not open video writer: {video_path}")
 
     trajectory: list[dict] = []
@@ -114,6 +255,8 @@ def main() -> None:
         step: int,
         metrics: dict,
         reason: str,
+        fine_estimate: FineRingEstimate | None,
+        alignment_progress: float,
     ) -> None:
         extension = plant.insertion_extension_mm()
         eye = annotate(
@@ -124,15 +267,21 @@ def main() -> None:
             metrics=metrics,
             insertion_extension_mm=extension,
             reason=reason,
+            fine_estimate=fine_estimate,
+            draw_alignment_centers=True,
         )
         world = annotate(
-            plant.capture_overview_rgb(),
-            title="world/contact evaluation view (not control input)",
+            presentation.capture_rgb(
+                alignment_progress=alignment_progress,
+                insertion_extension_mm=extension,
+            ),
+            title="FULL MECA500 KINEMATIC VIEW (not control input)",
             phase=phase,
             step=step,
             metrics=metrics,
             insertion_extension_mm=extension,
             reason=reason,
+            compact_header=True,
         )
         writer.write(np.concatenate([eye, world], axis=1))
 
@@ -143,6 +292,8 @@ def main() -> None:
             step=record.step,
             metrics=decision.metrics,
             reason=record.reasons[0],
+            fine_estimate=fine_detector.last_estimate,
+            alignment_progress=min(1.0, record.step / 24.0),
         )
         trajectory.append(
             {
@@ -195,6 +346,8 @@ def main() -> None:
                 step=insertion_step,
                 metrics=metrics,
                 reason=step_decision.reason,
+                fine_estimate=fine_detector.last_estimate,
+                alignment_progress=1.0,
             )
             contact = plant.wall_contact_metrics()
             contact_steps += int(contact["wall_contact_detected"])
@@ -252,6 +405,7 @@ def main() -> None:
     finally:
         writer.release()
         plant.close()
+        presentation.close()
 
     terminal_sample = clearance_samples[-1]
     clearance_result = insertion.clearance_contract.evaluate_episode(
@@ -274,7 +428,7 @@ def main() -> None:
             "robot_insertion_joint_state",
         ],
         "privileged_truth_used_for_control": False,
-        "privileged_truth_use": "world video and MuJoCo contact evaluation only",
+        "privileged_truth_use": "MuJoCo contact evaluation and right-pane presentation only",
         "stop_reason": full_flow_stop_reason,
         "alignment": alignment_result.to_dict(),
         "clearance_contract": clearance_result.to_dict(),
@@ -284,6 +438,7 @@ def main() -> None:
         "trajectory": trajectory,
         "limitations": [
             "The insertion plant is Cartesian, not the full six-axis robot.",
+            "The right video pane is a synchronized Meca500 kinematic presentation and is not the controller plant.",
             "MuJoCo contact uses a hidden axis-aligned square-wall proxy; analytic clearance uses the circular lumen contract.",
             "Rotational visual correction remains pending; this scene starts with parallel camera and trocar axes.",
         ],

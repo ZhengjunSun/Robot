@@ -12,7 +12,7 @@
   <visual>
     <global offwidth="1280" offheight="720"/>
     <quality shadowsize="4096"/>
-    <map znear="0.002" zfar="1.2"/>
+    <map znear="0.002" zfar="2.0"/>
     <headlight ambient="0.38 0.38 0.38" diffuse="0.45 0.45 0.45" specular="0.14 0.14 0.14"/>
   </visual>
 
@@ -23,30 +23,20 @@
   </default>
 
   <asset>
-    <mesh name="meca_link_0" file="link_0_visual.obj"/>
-    <mesh name="meca_link_1" file="link_1_visual.obj"/>
-    <mesh name="meca_link_2" file="link_2_visual.obj"/>
-    <mesh name="meca_link_3" file="link_3_visual.obj"/>
-    <mesh name="meca_link_4" file="link_4_visual.obj"/>
-    <mesh name="meca_link_5" file="link_5_visual.obj"/>
-    <mesh name="meca_link_6" file="link_6_flange_clean_visual.obj"/>
+    <mesh name="meca_link_0" file="../assets/robot/meca500_link_visual_mdh_m/link_0_visual.obj"/>
+    <mesh name="meca_link_1" file="../assets/robot/meca500_link_visual_mdh_m/link_1_visual.obj"/>
+    <mesh name="meca_link_2" file="../assets/robot/meca500_link_visual_mdh_m/link_2_visual.obj"/>
+    <mesh name="meca_link_3" file="../assets/robot/meca500_link_visual_mdh_m/link_3_visual.obj"/>
+    <mesh name="meca_link_4" file="../assets/robot/meca500_link_visual_mdh_m/link_4_visual.obj"/>
+    <mesh name="meca_link_5" file="../assets/robot/meca500_link_visual_mdh_m/link_5_visual.obj"/>
+    <mesh name="meca_link_6" file="../assets/robot/meca500_link_visual_mdh_m/link_6_flange_clean_visual.obj"/>
     <!-- NIH/HRA Visible Human eye anatomy, retained as visual-only meshes. -->
-    <mesh name="hra_sclera_mesh" file="VH_F_sclera_R.obj"/>
-    <mesh name="hra_bulbar_conjunctiva_mesh" file="VH_F_bulbar_conjunctiva_R.obj"/>
-    <mesh name="hra_corneoscleral_junction_mesh" file="VH_F_corneo_scleral_junction_R.obj"/>
-    <mesh name="hra_cornea_mesh" file="VH_F_cornea_R.obj"/>
-    <mesh name="hra_iris_mesh" file="VH_F_iris_R.obj"/>
-    <mesh name="hra_pupil_mesh" file="VH_F_pupil_R.obj"/>
-    <mesh name="hra_lens_mesh" file="VH_F_lens_R.obj"/>
-    <mesh name="hra_vitreous_mesh" file="VH_F_vitreous_humor_R.obj"/>
-    <mesh name="hra_retina_mesh" file="VH_F_retina_R.obj"/>
-    <mesh name="hra_choroid_mesh" file="VH_F_optic_choroid_R.obj"/>
-    <mesh name="hra_optic_disc_mesh" file="VH_F_optic_disc_R.obj"/>
-    <mesh name="hra_macula_mesh" file="VH_F_macula_lutea_R.obj"/>
-    <mesh name="hra_fovea_mesh" file="VH_F_fovea_R.obj"/>
-    <mesh name="hra_fundus_mesh" file="VH_F_retina_R_stare_im0081_uv.obj"/>
-    <mesh name="hra_pupil_fundus_projection_mesh" file="stare_im0081_pupil_projection_uv.obj"/>
-    <texture name="hra_fundus_texture" type="2d" file="stare_im0081_fundus_texture.png"/>
+    <mesh name="hra_sclera_mesh" file="../external_assets/nih_hra_eye/converted/VH_F_sclera_R.obj"/>
+    <mesh name="hra_bulbar_conjunctiva_mesh" file="../external_assets/nih_hra_eye/converted/VH_F_bulbar_conjunctiva_R.obj"/>
+    <mesh name="hra_corneoscleral_junction_mesh" file="../external_assets/nih_hra_eye/converted/VH_F_corneo_scleral_junction_R.obj"/>
+    <mesh name="hra_cornea_mesh" file="../external_assets/nih_hra_eye/converted/VH_F_cornea_R.obj"/>
+    <mesh name="hra_iris_mesh" file="../external_assets/nih_hra_eye/converted/VH_F_iris_R.obj"/>
+    <mesh name="hra_pupil_mesh" file="../external_assets/nih_hra_eye/converted/VH_F_pupil_R.obj"/>
     <material name="meca_blue" rgba="0.05 0.40 0.80 1"/>
     <material name="meca_light" rgba="0.80 0.84 0.90 1"/>
     <material name="flange_isolation" rgba="0.025 0.030 0.036 1"/>
@@ -65,7 +55,6 @@
     <material name="lens_mat" rgba="0.82 0.92 0.95 0.035"/>
     <material name="vitreous_mat" rgba="0.60 0.79 0.88 0"/>
     <material name="retina_mat" rgba="0.72 0.15 0.11 0.04"/>
-    <material name="fundus_mat" texture="hra_fundus_texture" rgba="1 1 1 1" emission="0.28"/>
     <material name="disc_mat" rgba="0.95 0.72 0.46 0.72"/>
     <material name="macula_mat" rgba="0.46 0.06 0.06 0.65"/>
     <material name="trocar_mat" rgba="0.00 0.46 0.64 1"/>
@@ -79,6 +68,7 @@
     <light name="eye_light" pos="0.29 0.00 0.32" dir="0.25 0 -0.75" diffuse="0.42 0.42 0.42"/>
     <geom name="operating_bench" type="box" pos="0.28 0 0.015" size="0.42 0.30 0.015" material="bench_mat"/>
     <geom name="bench_inlay" type="cylinder" pos="0.26110 0 0.032" size="0.018 0.0015" rgba="0.28 0.31 0.36 1"/>
+    <body name="presentation_focus" pos="0.36 0 0.13"/>
 
     <!-- Complete Meca500 R4 visual/kinematic chain. Joint ranges match config/meca500_official_specifications_20260711.yaml. -->
     <!--
@@ -167,9 +157,6 @@
       <geom name="hra_conjunctiva_visual" type="mesh" mesh="hra_bulbar_conjunctiva_mesh" material="conjunctiva_mat" contype="0" conaffinity="0"/>
       <geom name="hra_limbus_visual" type="mesh" mesh="hra_corneoscleral_junction_mesh" material="limbus_mat" contype="0" conaffinity="0"/>
       </body>
-      <!-- Real STARE fundus appearance in the pupil observation layer. This is a visual optical proxy. -->
-      <geom name="hra_pupil_fundus_projection_visual" type="mesh" mesh="hra_pupil_fundus_projection_mesh" pos="-0.00900 0 0" material="fundus_mat" contype="0" conaffinity="0"/>
-
       <!-- Frozen port: OD 2.0 mm, ID 1.0 mm, visible wall length 2.5 mm. After the eye rotation, its local x axis points along global -z. -->
       <!--
         Pars-plana-style scleral entry, deliberately 8 mm from the pupil
@@ -190,6 +177,7 @@
     <camera name="pupil_external_view" mode="fixed" pos="0.300 0.090 0.120" xyaxes="-0.918 0.397 0 -0.231 -0.535 0.813" fovy="22"/>
     <camera name="overview_close" mode="fixed" pos="0.155 -0.105 0.160" xyaxes="0.71 0.70 0 -0.30 0.31 0.90" fovy="38"/>
     <camera name="overview_wide" mode="fixed" pos="0.025 -0.280 0.300" xyaxes="0.82 0.57 0 -0.27 0.39 0.88" fovy="46"/>
+    <camera name="full_arm_presentation" mode="targetbody" target="presentation_focus" pos="-0.02 -0.55 0.40" fovy="45"/>
   </worldbody>
 
   <actuator>
