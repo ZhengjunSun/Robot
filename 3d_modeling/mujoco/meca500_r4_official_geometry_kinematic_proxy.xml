@@ -1,0 +1,82 @@
+<mujoco model="meca500_r4_official_geometry_kinematic_proxy">
+  <!--
+    Geometry and joint bounds are derived from Mecademic official Meca500 R4
+    CAD/manual sources. Link inertias, collision capsules, servo gains, and the
+    base-to-port transform are uncalibrated proxies and are not official data.
+  -->
+  <compiler angle="radian" coordinate="local" eulerseq="xyz"/>
+  <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
+
+  <default>
+    <joint damping="0.08" armature="0.002" limited="true"/>
+    <geom contype="0" conaffinity="0"/>
+    <position kp="260" kv="28"/>
+  </default>
+
+  <asset>
+    <mesh name="meca_link_0" file="link_0_visual.obj"/>
+    <mesh name="meca_link_1" file="link_1_visual.obj"/>
+    <mesh name="meca_link_2" file="link_2_visual.obj"/>
+    <mesh name="meca_link_3" file="link_3_visual.obj"/>
+    <mesh name="meca_link_4" file="link_4_visual.obj"/>
+    <mesh name="meca_link_5" file="link_5_visual.obj"/>
+    <mesh name="meca_link_6" file="link_6_visual.obj"/>
+    <material name="meca_blue" rgba="0.12 0.32 0.58 1"/>
+    <material name="meca_light" rgba="0.72 0.75 0.78 1"/>
+    <material name="tool_mat" rgba="0.08 0.08 0.09 1"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0.2 -0.5 0.7" dir="0.2 0.7 -1"/>
+    <body name="meca_base_mount" pos="0.39990694 0.14214932 0.16"
+          quat="-0.49956348 -0.49956348 0.50043614 0.50043614">
+      <geom name="link_0_visual" type="mesh" mesh="meca_link_0" material="meca_blue" mass="0"/>
+      <body name="link_1" pos="0 0 0.135">
+        <joint name="joint_1" type="hinge" axis="0 0 1" range="-3.054326191 3.054326191"/>
+        <inertial pos="0 0 0" mass="0.85" diaginertia="0.0012 0.0012 0.0010"/>
+        <geom name="link_1_visual" type="mesh" mesh="meca_link_1" material="meca_light" mass="0"/>
+        <body name="link_2" euler="-1.570796327 -1.570796327 0">
+          <joint name="joint_2" type="hinge" axis="0 0 1" range="-1.221730476 1.570796327"/>
+          <inertial pos="0.065 0 0" mass="0.95" diaginertia="0.0025 0.0025 0.0012"/>
+          <geom name="link_2_visual" type="mesh" mesh="meca_link_2" material="meca_light" mass="0"/>
+          <body name="link_3" pos="0.135 0 0">
+            <joint name="joint_3" type="hinge" axis="0 0 1" range="-2.356194490 1.221730476"/>
+            <inertial pos="0.05 0.03 0" mass="0.80" diaginertia="0.0018 0.0018 0.0009"/>
+            <geom name="link_3_visual" type="mesh" mesh="meca_link_3" material="meca_blue" mass="0"/>
+            <body name="link_4" pos="0.038 0.120 0" euler="-1.570796327 0 0">
+              <joint name="joint_4" type="hinge" axis="0 0 1" range="-2.967059728 2.967059728"/>
+              <inertial pos="0 0 0" mass="0.45" diaginertia="0.0005 0.0005 0.0004"/>
+              <geom name="link_4_visual" type="mesh" mesh="meca_link_4" material="meca_light" mass="0"/>
+              <body name="link_5" euler="1.570796327 0 0">
+                <joint name="joint_5" type="hinge" axis="0 0 1" range="-2.007128640 2.007128640"/>
+                <inertial pos="0 0.03 0" mass="0.35" diaginertia="0.00035 0.00035 0.00025"/>
+                <geom name="link_5_visual" type="mesh" mesh="meca_link_5" material="meca_blue" mass="0"/>
+                <body name="link_6" pos="0 0.070 0" euler="1.570796327 0 3.141592654">
+                  <joint name="joint_6" type="hinge" axis="0 0 1" range="-628.318530718 628.318530718"/>
+                  <inertial pos="0 0 -0.01" mass="0.18" diaginertia="0.00012 0.00012 0.00008"/>
+                  <geom name="link_6_visual" type="mesh" mesh="meca_link_6" material="meca_light" mass="0"/>
+                  <body name="ophthalmic_tool" pos="0 0 0">
+                    <geom name="instrument_shaft" type="capsule" fromto="0 0 0 0 0 0.055"
+                          size="0.000255" material="tool_mat" mass="0.015"/>
+                    <site name="tool_tip" pos="0 0 0.055" size="0.00055" rgba="0.05 0.2 1 1"/>
+                    <camera name="eye_in_hand" mode="fixed" pos="0.010 0 0.012"
+                            xyaxes="0 1 0 -1 0 0" fovy="41.9741"/>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="joint_1_position" joint="joint_1" ctrlrange="-3.054326191 3.054326191"/>
+    <position name="joint_2_position" joint="joint_2" ctrlrange="-1.221730476 1.570796327"/>
+    <position name="joint_3_position" joint="joint_3" ctrlrange="-2.356194490 1.221730476"/>
+    <position name="joint_4_position" joint="joint_4" ctrlrange="-2.967059728 2.967059728"/>
+    <position name="joint_5_position" joint="joint_5" ctrlrange="-2.007128640 2.007128640"/>
+    <position name="joint_6_position" joint="joint_6" ctrlrange="-628.318530718 628.318530718"/>
+  </actuator>
+</mujoco>

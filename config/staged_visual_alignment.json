@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "name": "staged_visual_alignment_baseline",
+  "description": "Coarse-to-fine visual alignment and fail-closed insertion handoff.",
+  "coarse_alignment": {
+    "detectors": [
+      "traditional_ring",
+      "yolo"
+    ],
+    "command_frame": "camera",
+    "maximum_translation_step_mm": 2.5
+  },
+  "fine_alignment": {
+    "detector": "outer_inner_ring_pnp",
+    "command_frame": "camera",
+    "maximum_translation_step_mm": 1.0,
+    "maximum_rotation_step_deg": 2.0
+  },
+  "thresholds": {
+    "minimum_coarse_confidence": 0.5,
+    "coarse_to_fine_center_error_px": 30.0,
+    "maximum_optical_outer_error_px": 2.0,
+    "maximum_outer_inner_concentricity_px": 1.5,
+    "maximum_lateral_error_mm": 0.2,
+    "maximum_axis_error_deg": 1.0,
+    "maximum_standoff_error_mm": 0.3,
+    "maximum_reprojection_error_px": 0.5,
+    "required_stable_frames": 5
+  },
+  "handoff": {
+    "target": "existing_traditional_insertion_controller",
+    "fail_closed": true,
+    "note": "Thresholds are initial software defaults and require physical calibration before hardware authorization."
+  }
+}

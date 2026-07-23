@@ -1,0 +1,141 @@
+{
+  "_comment": "戳卡视觉伺服控制配置文件 - 基于visual_control.py整合版",
+  "models": {
+    "outer_model": "outer_model.pt",
+    "inner_model": "inner_model.pt",
+    "model": "rz_train_runs/rz_trocar_v11n/weights/best.pt",
+    "mode_strategy": "auto",
+    "_comment": "检测模型配置。优先使用 model(单模型); 若 model 为空或无效则回退到 outer_model+inner_model(双模型)"
+  },
+  "detection": {
+    "conf_threshold": 0.3,
+    "nms_threshold": 0.5,
+    "_comment": "检测置信度阈值"
+  },
+  "robot": {
+    "ip_address": "192.168.0.100",
+    "_comment": "Mecademic机械臂IP地址"
+  },
+  "loop_control": {
+    "max_iterations": 50,
+    "position_tolerance": 40,
+    "depth_tolerance": 25,
+    "min_displacement": 3.0,
+    "max_control_displacement": 10.0,
+    "step_delay": 0.3,
+    "move_velocity": 10,
+    "_comment": "闭环控制参数",
+    "_comment2": "position_tolerance: 像素偏差容忍度；baseline真实实验先用40px完成稳定闭环",
+    "_comment3": "depth_tolerance: 深度偏差容忍度(mm)",
+    "_comment4": "move_velocity: 机械臂移动速度(%)",
+    "_comment5": "max_control_displacement: 单次XY闭环控制位移上限(mm)，防止检测跳变导致大步移动"
+  },
+  "coordinate_transform": {
+    "_comment": "视觉坐标系到机械臂坐标系的转换参数",
+    "_comment2": "这些参数需要根据实际标定进行调整",
+    "_comment3": "调整方法：观察首次移动方向，如果反向则改为-1",
+    "direction_flip": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "_comment4": "方向翻转：[X, Y, Z, Rx, Ry, Rz]。1=正向，-1=反向",
+    "_comment5": "示例：如果机械臂向左移动但应该向右，将X改为-1",
+    "scale_factor": [
+        0.05,
+        0.05,
+      0.5,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "_comment6": "比例因子：[X, Y, Z, Rx, Ry, Rz]",
+    "_comment7": "用于调整像素到毫米的转换比例",
+    "_comment8": "如果移动幅度过大，减小此值；过小则增大",
+    "angle_scale": 0.5,
+    "_comment9": "角度调整缩放系数，避免旋转幅度过大"
+  },
+  "depth_estimation": {
+    "enable": true,
+    "reference_inner_size": 40.0,
+    "reference_distance": 200.0,
+    "size_tolerance": 5.0,
+    "min_depth": 80.0,
+    "max_depth": 350.0,
+    "depth_filter_alpha": 0.3,
+    "_comment": "Z轴深度估计：基于内框像素大小通过相似三角形估算相机到戳卡的距离(mm)"
+  },
+  "intrinsic_projection": {
+    "enable": true,
+    "_comment": "启用相机内参投影：用 fx/fy 和估算深度替代固定 scale_factor"
+  },
+  "pd_control": {
+    "enable": false,
+    "kp": 0.8,
+    "kd": 0.2,
+    "_comment": "PD控制参数：baseline实验先关闭微分项，避免检测跳变时二次修正过冲"
+  },
+  "z_axis_control": {
+    "enable": true,
+    "target_inner_size": 40.0,
+    "size_tolerance": 5.0,
+    "max_z_step": 2.0,
+    "min_z_step": 0.3,
+    "z_stop_buffer": 2.0,
+    "z_velocity": 5,
+    "flip_z": 1,
+    "max_iterations": 20,
+    "_comment": "Z轴深度对准：基于内框像素大小控制进给深度，flip_z控制方向。z_stop_buffer=到达min_z_height前多少mm开始判定收敛"
+  },
+  "attitude_control": {
+    "enable": false,
+    "angle_tolerance": 1.0,
+    "max_angle_step": 1.0,
+    "angle_gain": 0.3,
+    "max_iterations": 15,
+    "_comment": "Rx/Ry姿态对准：基于内外框中心偏移计算倾斜角并调整"
+  },
+  "rz_control": {
+    "enable": false,
+    "target_angle": 0.0,
+    "angle_tolerance": 3.0,
+    "max_angle_step": 2.0,
+    "angle_gain": 0.5,
+    "max_iterations": 10,
+    "ema_alpha": 0.4,
+    "accept_180_ambiguity": true,
+    "_comment": "Rz旋转对准（已禁用，由fixed_angle替代）"
+  },
+  "fixed_angle": {
+    "enable": false,
+    "rx": 177.5112,
+    "ry": -30.8738,
+    "rz": 178.2953,
+    "_comment": "C/D合并为固定角度旋转。rx/ry/rz为目标绝对角度(deg)，通过 --calibrate-angles 标定。设为null则保持当前值不动。旧标定入口已归档：python 没有用的代码/archived_after_single_arm_pivot_20260707/trocar_robot_servo_safe.py --calibrate-angles"
+  },
+  "visualization": {
+    "show_realtime": true,
+    "save_frames": true,
+    "frame_save_dir": "./alignment_frames",
+    "_comment": "可视化设置"
+  },
+  "camera": {
+    "index": 0,
+    "_comment": "摄像头设备索引，0=当前MECADEMIC末端相机"
+  },
+  "safety": {
+    "min_z_height": 60,
+    "max_displacement_per_step": 60,
+    "_comment": "安全限制参数"
+  },
+  "fast_align": {
+    "enable": true,
+    "test_distance": 5.0,
+    "max_direct_displacement": 50.0,
+    "max_correction": 10.0,
+    "_comment": "快速阶段A: 2次Jacobian标定 + 1次直达，替代迭代闭环。设enable:false回退到迭代模式"
+  }
+}

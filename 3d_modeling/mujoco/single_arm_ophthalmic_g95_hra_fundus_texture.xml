@@ -1,0 +1,23 @@
+<mujoco model="g95_hra_fundus_texture_preview">
+  <compiler angle="radian" coordinate="local" meshdir="../external_assets/nih_hra_eye/converted" texturedir="../external_assets/nih_hra_eye/fundus_texture"/>
+  <option timestep="0.002" gravity="0 0 0"/>
+  <visual>
+    <global offwidth="960" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.002" zfar="10.0"/>
+    <headlight ambient="0.72 0.66 0.58" diffuse="0.42 0.34 0.27" specular="0.03 0.03 0.03"/>
+  </visual>
+  <asset>
+    <mesh name="hra_fundus_uv" file="VH_F_retina_R_stare_im0081_uv.obj"/>
+    <texture name="stare_fundus_texture" type="2d" file="stare_im0081_fundus_texture.png"/>
+    <material name="fundus_texture_mat" texture="stare_fundus_texture" texuniform="false" rgba="1 1 1 1" specular="0.01" shininess="0.03"/>
+  </asset>
+  <worldbody>
+    <light name="pupil_illumination" pos="0 0 0.004" dir="0 0 -1" diffuse="0.92 0.82 0.70" directional="true"/>
+    <body name="hra_fundus_eye">
+      <geom type="mesh" mesh="hra_fundus_uv" material="fundus_texture_mat" contype="0" conaffinity="0"/>
+    </body>
+    <!-- Appearance-only pupil/fundus observation proxy; no third trocar camera. -->
+    <camera name="hra_fundus" mode="fixed" pos="0 0 0.0035" xyaxes="1 0 0 0 1 0" fovy="46"/>
+  </worldbody>
+</mujoco>

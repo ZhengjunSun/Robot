@@ -1,0 +1,71 @@
+<mujoco model="g95_hra_instrument_state_sync">
+  <compiler angle="radian" coordinate="local" meshdir="../external_assets/nih_hra_eye/converted"/>
+  <option timestep="0.002" gravity="0 0 0"/>
+  <visual>
+    <global offwidth="960" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.003" zfar="10.0"/>
+    <headlight ambient="0.30 0.30 0.30" diffuse="0.72 0.70 0.66" specular="0.20 0.20 0.20"/>
+  </visual>
+  <asset>
+    <mesh name="hra_sclera" file="VH_F_sclera_R.obj"/>
+    <mesh name="hra_cornea" file="VH_F_cornea_R.obj"/>
+    <mesh name="hra_conjunctiva" file="VH_F_bulbar_conjunctiva_R.obj"/>
+    <mesh name="hra_iris" file="VH_F_iris_R.obj"/>
+    <mesh name="hra_pupil" file="VH_F_pupil_R.obj"/>
+    <mesh name="hra_limbus" file="VH_F_corneo_scleral_junction_R.obj"/>
+    <material name="sclera_mat" rgba="0.94 0.91 0.84 1" specular="0.25" shininess="0.45"/>
+    <material name="cornea_mat" rgba="0.58 0.84 0.94 0.22" specular="0.75" shininess="0.9"/>
+    <material name="conjunctiva_mat" rgba="0.84 0.45 0.47 0.30" specular="0.22"/>
+    <material name="iris_mat" rgba="0.055 0.25 0.20 1" specular="0.28" shininess="0.55"/>
+    <material name="pupil_mat" rgba="0.006 0.006 0.008 1" specular="0.08"/>
+    <material name="limbus_mat" rgba="0.58 0.70 0.67 0.58" specular="0.35"/>
+    <material name="trocar_mat" rgba="0.08 0.31 0.78 1" specular="0.42" shininess="0.70"/>
+    <material name="lumen_mat" rgba="0.008 0.008 0.010 1"/>
+    <material name="needle_mat" rgba="0.72 0.75 0.78 1" specular="0.78" shininess="0.92"/>
+    <material name="fiber_mat" rgba="0.93 0.75 0.22 1" specular="0.35"/>
+    <material name="ground_mat" rgba="0.16 0.17 0.18 1"/>
+  </asset>
+  <worldbody>
+    <light name="operation_key" pos="0.30 -0.05 0.23" dir="0.45 0.35 -0.82" diffuse="0.92 0.88 0.82"/>
+    <light name="operation_fill" pos="0.34 0.06 0.20" dir="0.15 -0.65 -0.65" diffuse="0.32 0.38 0.45"/>
+    <geom name="stage" type="plane" pos="0.352 0 0.143" size="0.07 0.07 0.001" material="ground_mat" contype="0" conaffinity="0"/>
+
+    <!-- The HRA eye is rotated so its anterior axis matches the existing +x tool replay. -->
+    <body name="hra_eye_visual" pos="0.352 0 0.160" euler="0 -1.57079632679 0">
+      <geom type="mesh" mesh="hra_sclera" material="sclera_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_conjunctiva" material="conjunctiva_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_limbus" material="limbus_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_iris" material="iris_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_pupil" material="pupil_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_cornea" material="cornea_mat" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- Frozen single-arm trocar: OD/ID/length = 2.0/1.0/2.5 mm. -->
+    <body name="left_trocar_visual" pos="0.3400 0.0042 0.1612">
+      <geom name="left_trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_mat" contype="0" conaffinity="0"/>
+      <geom name="left_trocar_lumen" type="cylinder" pos="-0.00127 0 0" euler="0 1.57079632679 0" size="0.00050 0.00005" material="lumen_mat" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- G99 planning visual only; dimensions remain pending hardware measurement. -->
+    <body name="right_trocar_planning" pos="0.3400 -0.0042 0.1612">
+      <geom name="right_trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_mat" contype="0" conaffinity="0"/>
+      <geom name="right_trocar_lumen" type="cylinder" pos="-0.00127 0 0" euler="0 1.57079632679 0" size="0.00050 0.00005" material="lumen_mat" contype="0" conaffinity="0"/>
+      <geom name="fiber_planning" type="capsule" fromto="-0.030 0 0 0.003 0 0" size="0.00020" material="fiber_mat" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- Existing Cartesian replay drives this visual carriage; no new dynamics are claimed. -->
+    <body name="needle_replay_carriage" pos="0.3400 0.0042 0.1612">
+      <joint name="replay_x" type="slide" axis="1 0 0" range="-0.030 0.080"/>
+      <joint name="replay_y" type="slide" axis="0 1 0" range="-0.025 0.025"/>
+      <joint name="replay_z" type="slide" axis="0 0 1" range="-0.025 0.025"/>
+      <geom name="needle_replay" type="capsule" fromto="-0.032 0 0 0 0 0" size="0.000255" material="needle_mat" contype="0" conaffinity="0"/>
+      <site name="needle_tip" pos="0 0 0" size="0.00035" rgba="0.10 0.90 0.95 1"/>
+      <geom name="eye_in_hand_camera_body" type="box" pos="-0.012 -0.006 0.005" size="0.0025 0.0020 0.0015" rgba="0.035 0.038 0.043 1" contype="0" conaffinity="0"/>
+      <camera name="eye_in_hand_visual" mode="fixed" pos="-0.012 -0.006 0.005" xyaxes="0 -1 0 0 0 1" fovy="46"/>
+    </body>
+
+    <camera name="hra_operation_front" mode="fixed" pos="0.300 0 0.160" xyaxes="0 -1 0 0 0 1" fovy="31"/>
+    <camera name="hra_operation_oblique" mode="targetbody" target="hra_eye_visual" pos="0.295 -0.055 0.195" fovy="29"/>
+  </worldbody>
+</mujoco>

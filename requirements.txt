@@ -1,0 +1,14 @@
+numpy
+scipy
+opencv-python
+pybullet
+matplotlib
+pillow
+pandas
+pyyaml
+tqdm
+ultralytics
+torch
+torchvision
+mecademicpy
+mujoco==3.2.7

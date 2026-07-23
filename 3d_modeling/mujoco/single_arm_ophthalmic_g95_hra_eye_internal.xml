@@ -1,0 +1,46 @@
+<mujoco model="g95_hra_eye_internal_preview">
+  <compiler angle="radian" coordinate="local" meshdir="../external_assets/nih_hra_eye/converted"/>
+  <option timestep="0.002" gravity="0 0 0"/>
+  <visual>
+    <global offwidth="960" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.003" zfar="10.0"/>
+    <headlight ambient="0.24 0.20 0.18" diffuse="0.68 0.58 0.50" specular="0.14 0.14 0.14"/>
+  </visual>
+  <asset>
+    <mesh name="hra_retina" file="VH_F_retina_R.obj"/>
+    <mesh name="hra_choroid" file="VH_F_optic_choroid_R.obj"/>
+    <mesh name="hra_optic_disc" file="VH_F_optic_disc_R.obj"/>
+    <mesh name="hra_macula" file="VH_F_macula_lutea_R.obj"/>
+    <mesh name="hra_fovea" file="VH_F_fovea_R.obj"/>
+    <mesh name="hra_ciliary_body" file="VH_F_ciliary_body_R.obj"/>
+    <mesh name="hra_ciliary_processes" file="VH_F_ciliary_processes_R.obj"/>
+    <mesh name="hra_iris" file="VH_F_iris_R.obj"/>
+    <mesh name="hra_lens" file="VH_F_lens_R.obj"/>
+    <material name="retina_mat" rgba="0.76 0.25 0.18 1" specular="0.12"/>
+    <material name="choroid_mat" rgba="0.26 0.018 0.020 0.72" specular="0.08"/>
+    <material name="disc_mat" rgba="0.94 0.66 0.43 1" specular="0.12"/>
+    <material name="macula_mat" rgba="0.42 0.08 0.045 1" specular="0.08"/>
+    <material name="fovea_mat" rgba="0.20 0.018 0.018 1" specular="0.08"/>
+    <material name="ciliary_mat" rgba="0.24 0.045 0.055 1" specular="0.10"/>
+    <material name="iris_mat" rgba="0.055 0.25 0.20 1" specular="0.25"/>
+    <material name="lens_mat" rgba="0.68 0.86 0.94 0.24" specular="0.65" shininess="0.85"/>
+  </asset>
+  <worldbody>
+    <light name="fundus_key" pos="0.020 -0.020 0.040" dir="-0.2 0.2 -1" diffuse="0.88 0.68 0.54"/>
+    <light name="fundus_fill" pos="-0.025 0.025 0.020" dir="0.4 -0.3 -0.4" diffuse="0.25 0.20 0.22"/>
+    <body name="hra_internal_eye">
+      <geom type="mesh" mesh="hra_choroid" material="choroid_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_retina" material="retina_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_optic_disc" material="disc_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_macula" material="macula_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_fovea" material="fovea_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_ciliary_body" material="ciliary_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_ciliary_processes" material="ciliary_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_iris" material="iris_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_lens" material="lens_mat" contype="0" conaffinity="0"/>
+    </body>
+    <camera name="hra_internal_front" mode="fixed" pos="0 0 0.058" xyaxes="1 0 0 0 1 0" fovy="31"/>
+    <camera name="hra_internal_oblique" mode="targetbody" target="hra_internal_eye" pos="0.035 -0.040 0.035" fovy="29"/>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-07-15T18:27:14",
+  "stage": "G95_anatomy_visual_scaffold",
+  "units": "meter",
+  "eye": {
+    "outer_radius_mm": 12.0,
+    "posterior_retina_radius_mm": 11.55,
+    "vessel_surface_radius_mm": 11.3,
+    "retina_cap_theta_max_deg": 82.0
+  },
+  "iris": {
+    "pupil_radius_mm": 1.25,
+    "outer_radius_mm": 3.5,
+    "thickness_mm": 0.18
+  },
+  "vessels": {
+    "branch_count": 24,
+    "segment_count": 228,
+    "major_radius_mm": 0.07,
+    "secondary_radius_mm": 0.04,
+    "topology": "deterministic procedural proxy; not patient-specific anatomy"
+  },
+  "fundus_projection_vessels": {
+    "branch_count": 16,
+    "segment_count": 168
+  },
+  "mesh_counts": {
+    "sclera_shell": {
+      "vertices": 2593,
+      "triangles": 5112
+    },
+    "posterior_retina": {
+      "vertices": 1537,
+      "triangles": 3008
+    },
+    "retinal_vessels": {
+      "vertices": 3648,
+      "triangles": 3648
+    },
+    "fundus_projection_vessels": {
+      "vertices": 2688,
+      "triangles": 2688
+    },
+    "iris_annulus": {
+      "vertices": 256,
+      "triangles": 512
+    }
+  },
+  "outputs": {
+    "sclera_shell": "3d_modeling\\mujoco\\assets\\g95_eye\\sclera_shell.obj",
+    "posterior_retina": "3d_modeling\\mujoco\\assets\\g95_eye\\posterior_retina.obj",
+    "retinal_vessels": "3d_modeling\\mujoco\\assets\\g95_eye\\retinal_vessels.obj",
+    "fundus_projection_vessels": "3d_modeling\\mujoco\\assets\\g95_eye\\fundus_projection_vessels.obj",
+    "iris_annulus": "3d_modeling\\mujoco\\assets\\g95_eye\\iris_annulus.obj"
+  },
+  "evidence_boundary": "These assets provide an anatomy-enhanced synthetic visual scaffold. Vessel topology, tissue optics, and dimensions other than the frozen 24 mm eye envelope have not been clinically validated."
+}

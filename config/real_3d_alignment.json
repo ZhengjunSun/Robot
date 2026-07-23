@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "name": "real_3d_alignment_mainline",
+  "description": "Unified dry-run entrypoint for real 3D trocar alignment. Real robot execution is intentionally disabled here.",
+  "paths": {
+    "camera_config": "3d_modeling/config/handeye_calibration_config.json",
+    "extrinsic_config": "3d_modeling/config/camera_calibration_user_confirmed_20260719.json",
+    "trocar_config": "3d_modeling/config/trocar_model_measured_20260612.json",
+    "output_root": "3d_modeling/outputs/real_3d_alignment"
+  },
+  "perception": {
+    "detection_method": "auto",
+    "use_inner_ring": false,
+    "save_debug_images": true
+  },
+  "quality_gate": {
+    "max_reprojection_error_px": 0.35,
+    "min_depth_mm": 15.0,
+    "max_depth_mm": 80.0,
+    "min_major_diameter_px": 8.0,
+    "max_major_diameter_px": 80.0,
+    "max_ellipse_aspect_ratio": 1.8,
+    "max_translation_jump_mm": 3.0,
+    "max_depth_jump_mm": 2.0,
+    "max_axis_jump_deg": 12.0
+  },
+  "control": {
+    "profile": "real_close_range_dry_run",
+    "target_distance_mm": 18.0,
+    "target_distance_note": "Real dry-run close-range target. Some simulation demos use 60 mm target depth and should be reported as a separate profile.",
+    "k_xy": 0.35,
+    "k_z": 0.35,
+    "k_rot": 0.25,
+    "max_translation_step_mm": 1.0,
+    "max_rotation_step_deg": 2.0,
+    "max_link6_translation_step_mm": 2.5,
+    "min_link6_z_mm": 20.0
+  },
+  "robot": {
+    "ip_address": "192.168.0.100",
+    "execution_enabled": false,
+    "confirmation_token": "REAL_3D_ALIGN",
+    "max_dry_run_age_s": 300.0,
+    "note": "This config is for perception, gate, and dry-run command generation only. Do not enable real motion without onsite validation."
+  }
+}

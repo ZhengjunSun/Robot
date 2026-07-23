@@ -1,0 +1,56 @@
+{
+  "units": "meters",
+  "workspace": {
+    "name": "Meca500_trocar_3d_digital_twin",
+    "world_frame": "robot_base",
+    "notes": "First runnable 3D scene. Robot geometry is simplified until official Meca500 CAD/URDF is imported."
+  },
+  "robot": {
+    "name": "Mecademic Meca500",
+    "ip_address": "192.168.0.100",
+    "asset_status": "simplified_placeholder_geometry",
+    "base_position_m": [0.0, 0.0, 0.0],
+    "base_rpy_deg": [0.0, 0.0, 0.0],
+    "joint_angles_deg": [0.0, -35.0, 55.0, 0.0, 35.0, 0.0],
+    "approx_joint_points_m": [
+      [0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.085],
+      [0.095, -0.035, 0.175],
+      [0.215, -0.105, 0.245],
+      [0.315, -0.160, 0.235],
+      [0.380, -0.180, 0.220]
+    ]
+  },
+  "camera": {
+    "physical_index": 0,
+    "mount": "eye_in_hand_placeholder",
+    "image_width": 640,
+    "image_height": 480,
+    "fx": 630.334117275105,
+    "fy": 628.636068386433,
+    "cx": 296.716741234589,
+    "cy": 280.69092649891,
+    "near_m": 0.02,
+    "far_m": 1.5,
+    "eye_m": [0.380, -0.180, 0.220],
+    "target_m": [0.360, 0.020, 0.055],
+    "up_m": [0.0, 0.0, 1.0]
+  },
+  "trocar": {
+    "name": "trocar_placeholder",
+    "center_m": [0.360, 0.020, 0.040],
+    "axis": [0.0, 0.0, 1.0],
+    "height_m": 0.050,
+    "outer_radius_m": 0.020,
+    "inner_radius_m": 0.008,
+    "top_marker_height_m": 0.004
+  },
+  "rendering": {
+    "overview_width": 1280,
+    "overview_height": 720,
+    "background_rgba": [0.93, 0.94, 0.95, 1.0],
+    "plane_size_m": 1.0,
+    "save_depth_npy": true,
+    "save_segmentation_png": true
+  }
+}

@@ -1,0 +1,78 @@
+<mujoco model="single_arm_ophthalmic_g95_anatomy_visual">
+  <compiler angle="radian" coordinate="local"/>
+  <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
+
+  <visual>
+    <global offwidth="960" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.002" zfar="1.0"/>
+    <headlight ambient="0.10 0.10 0.10" diffuse="0.20 0.20 0.20" specular="0.05 0.05 0.05"/>
+  </visual>
+
+  <asset>
+    <mesh name="sclera_shell_mesh" file="assets/g95_eye/sclera_shell.obj"/>
+    <mesh name="posterior_retina_mesh" file="assets/g95_eye/posterior_retina.obj"/>
+    <mesh name="retinal_vessels_mesh" file="assets/g95_eye/retinal_vessels.obj"/>
+    <mesh name="iris_annulus_mesh" file="assets/g95_eye/iris_annulus.obj"/>
+    <material name="sclera_translucent" rgba="0.94 0.91 0.84 0.82"/>
+    <material name="cornea_transparent" rgba="0.60 0.90 1.00 0.07"/>
+    <material name="lens_transparent" rgba="0.90 0.96 0.83 0.035"/>
+    <material name="iris_green" rgba="0.08 0.34 0.27 1"/>
+    <material name="retina_red" rgba="0.78 0.22 0.16 1" emission="0.35"/>
+    <material name="vessel_red" rgba="0.36 0.004 0.008 1" emission="0.45"/>
+    <material name="optic_disc" rgba="0.93 0.62 0.40 1" emission="0.25"/>
+    <material name="macula" rgba="0.25 0.025 0.035 1" emission="0.30"/>
+    <material name="trocar_blue" rgba="0.05 0.28 0.82 1"/>
+    <material name="metal" rgba="0.72 0.75 0.77 1"/>
+    <material name="needle" rgba="0.12 0.13 0.15 1"/>
+    <material name="fiber" rgba="0.92 0.80 0.28 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="room_key" pos="0.27 -0.20 0.30" dir="0.4 0.3 -1" diffuse="0.45 0.45 0.43"/>
+    <light name="room_fill" pos="0.28 0.16 0.22" dir="0.5 -0.4 -0.2" diffuse="0.20 0.22 0.24"/>
+
+    <!-- Visual/anatomical scaffold only. The frozen G28-G94 contact scene remains unchanged. -->
+    <body name="eye_anatomy" pos="0.352 0 0.160">
+      <camera name="retina_inspection_view" mode="fixed" pos="-0.005 0 0" xyaxes="0 -1 0 0 0 1" fovy="48"/>
+      <!-- The full sclera shell is kept as a generated inspection asset but
+           excluded from the pupil camera because its back surface occludes
+           the posterior pole under MuJoCo's single-pass alpha renderer. -->
+      <!-- Corneal/lens transparency is deferred to camera post-processing;
+           stacked transparent geoms otherwise hide the posterior pole. -->
+      <!-- The lens is omitted from this pupil-view scaffold because MuJoCo's
+           alpha blending darkens stacked transparent surfaces. Optical media
+           will be handled by the later camera post-processing model. -->
+      <!-- Iris is composited in the final pupil-camera post-processing pass;
+           MuJoCo convexifies holed meshes and would otherwise close the pupil. -->
+      <geom name="posterior_retina_visual" type="mesh" mesh="posterior_retina_mesh" material="retina_red" contype="0" conaffinity="0"/>
+      <geom name="retinal_vessels_visual" type="mesh" mesh="retinal_vessels_mesh" material="vessel_red" contype="0" conaffinity="0"/>
+      <!-- MuJoCo convexifies open mesh geoms. This planar posterior-pole
+           projection keeps the fundus observable from the external pupil
+           camera while the curved mesh above remains the 3-D inspection layer. -->
+      <geom name="pupil_fundus_projection" type="cylinder" pos="0.01105 0 0" euler="0 1.57079632679 0" size="0.0055 0.000035" material="retina_red" contype="0" conaffinity="0"/>
+      <geom name="optic_disc_visual" type="cylinder" pos="0.01118 0.00165 0.00035" euler="0 1.57079632679 0" size="0.00072 0.00005" material="optic_disc" contype="0" conaffinity="0"/>
+      <geom name="macula_visual" type="cylinder" pos="0.01130 -0.00155 -0.00015" euler="0 1.57079632679 0" size="0.00055 0.000035" material="macula" contype="0" conaffinity="0"/>
+
+      <!-- Frozen single-arm dimensions: 2.0 mm OD, 1.0 mm ID, 2.5 mm visible length. -->
+      <body name="left_trocar_visual" pos="-0.0111 0.0042 0.0012">
+        <geom name="left_trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_blue" contype="0" conaffinity="0"/>
+        <geom name="left_trocar_lumen" type="cylinder" pos="-0.00127 0 0" euler="0 1.57079632679 0" size="0.00050 0.00005" rgba="0.01 0.01 0.012 1" contype="0" conaffinity="0"/>
+      </body>
+
+      <!-- Right trocar/fiber are G99 planning visuals; their hardware profile is still pending measurement. -->
+      <body name="right_trocar_planning_visual" pos="-0.0111 -0.0042 0.0012">
+        <geom name="right_trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_blue" contype="0" conaffinity="0"/>
+        <geom name="right_trocar_lumen" type="cylinder" pos="-0.00127 0 0" euler="0 1.57079632679 0" size="0.00050 0.00005" rgba="0.01 0.01 0.012 1" contype="0" conaffinity="0"/>
+      </body>
+
+      <geom name="needle_visual" type="capsule" fromto="-0.0170 0.0042 0.0012 0.0030 0.0042 0.0012" size="0.000255" material="needle" contype="0" conaffinity="0"/>
+      <geom name="fiber_planning_visual" type="capsule" fromto="-0.0170 -0.0042 0.0012 0.0030 -0.0042 0.0012" size="0.00020" material="fiber" contype="0" conaffinity="0"/>
+      <light name="fiber_tip_light" pos="0.0030 -0.0042 0.0012" dir="0.96 0.24 -0.08" cutoff="72" exponent="5" diffuse="1.25 0.94 0.64" specular="0.45 0.35 0.20"/>
+    </body>
+
+    <!-- External observation through the pupil; this is not a third-trocar camera. -->
+    <camera name="pupil_external_view" mode="fixed" pos="0.315 0 0.160" xyaxes="0 -1 0 0 0 1" fovy="25"/>
+    <camera name="eye_overview" mode="fixed" pos="0.322 -0.030 0.185" xyaxes="0.55 -0.83 0 -0.35 -0.23 0.91" fovy="42"/>
+  </worldbody>
+</mujoco>

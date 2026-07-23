@@ -1,0 +1,134 @@
+schema_version: 1
+name: yolo_port_roi_for_residual_rl
+updated_at: 2026-07-06
+
+purpose:
+  summary: >
+    Use YOLO as a conservative trocar/port ROI provider and perception-uncertainty
+    source for residual reinforcement learning. This contract is not a detector
+    leaderboard target and does not claim full in/out/trocar semantic detection.
+  thesis_boundary:
+    - YOLO provides a candidate ROI, confidence, dropout, and box jitter statistics.
+    - Geometric pose estimation and quality gates remain responsible for 3D pose.
+    - Residual SAC consumes bounded perception uncertainty; it does not replace detection or geometry.
+
+active_contract:
+  class_schema: port_roi_single_class
+  target_classes:
+    - trocar
+  names:
+    0: trocar
+  confidence_threshold: 0.25
+  nms_iou: 0.5
+  primary_metrics:
+    - target_recall
+    - false_positive_per_image
+    - center_error_px_mean
+    - center_error_px_p95
+    - dropout_probability
+    - confidence_distribution
+  secondary_metrics:
+    - mAP50
+    - mAP50-95
+    - latency_ms
+
+evidence_levels:
+  same_frame_shadow_smoke:
+    level: E4_same_frame_shadow_smoke
+    allowed_claim: Toolchain passes on frames used for adaptation or manual review.
+    forbidden_claim: Held-out detector generalization.
+  heldout_detector_audit:
+    level: E2_E3_detector_fit_or_noise_model
+    allowed_claim: Detector error can be quantified for ROI and noise modeling.
+    forbidden_claim: Real robot closed-loop insertion.
+  real_image_shadow:
+    level: E4_real_image_shadow_no_robot_motion
+    allowed_claim: Offline gates would accept or refuse motion on recorded real images.
+    forbidden_claim: Robot motion or physical insertion was executed.
+
+datasets:
+  active_scan_reviewed_trocar:
+    role: current_small_clean_seed
+    dataset_yaml: 3d_modeling/outputs/manual_yolo_label_review/active_scan_port_20260701/reviewed_dataset/data.yaml
+    expected_schema: port_roi_single_class
+    expected_names:
+      - trocar
+    label_status: manual_accepted_or_adjusted
+    evidence_boundary: same_frame_only_until_heldout_added
+  heldout_trocar_review_queue:
+    role: reviewed_heldout_source
+    dataset_yaml: 3d_modeling/outputs/yolo_review_candidates/heldout_after_lfs_pull_20260703/data.yaml
+    expected_schema: port_roi_single_class
+    expected_names:
+      - trocar
+    label_status: manual_accepted_28_of_28_on_2026_07_06
+    evidence_boundary: reviewed_project_samples_for_detector_fit_and_noise_model
+  reviewed_port_roi_20260706:
+    role: active_single_class_port_roi_training_split
+    dataset_yaml: 3d_modeling/outputs/yolo_port_roi_dataset/reviewed_port_roi_20260706/data.yaml
+    expected_schema: port_roi_single_class
+    expected_names:
+      - trocar
+    label_status: active_scan_seed_plus_manual_accepted_heldout
+    evidence_boundary: grouped_small_sample_detector_fit_not_broad_generalization
+  rz_four_class_legacy_candidate:
+    role: legacy_four_class_candidate_not_active_gate
+    dataset_yaml: rz_dataset/data.yaml
+    expected_schema: legacy_four_class
+    expected_names:
+      - in
+      - out
+      - trocar
+      - eye
+    label_status: legacy_project_labels
+    evidence_boundary: current_audit_shows_in_out_trocar_recall_zero
+  legacy_inner_outer_noise_source:
+    role: legacy_outer_port_center_noise_proxy
+    dataset_yaml: data.yaml
+    expected_schema: legacy_two_class
+    expected_names:
+      - in
+      - out
+    label_status: legacy_project_labels
+    evidence_boundary: usable_only_as_outer_center_noise_proxy_after_consistency_audit
+
+models:
+  active_baseline:
+    path: rz_train_runs/rz_trocar_v11n/weights/best.pt
+    role: four_class_yolo11n_candidate
+    status: not_active_for_formal_port_gate
+  same_frame_adapter:
+    path: 3d_modeling/outputs/yolo_train_runs/manual_reviewed_active_scan_port_yolo11n_aug/weights/best.pt
+    role: same_frame_port_roi_toolchain_smoke
+    status: do_not_claim_generalization
+  legacy_outer:
+    path: outer_model.pt
+    role: fitted_outer_center_noise_proxy
+    status: legacy_proxy_only
+  legacy_inner:
+    path: inner_model.pt
+    role: legacy_inner_candidate_source
+    status: high_false_positive_requires_roi_geometry_gate
+  active_port_roi_20260706:
+    path: runs/detect/rz_train_runs/port_roi_yolo11n_20260706/weights/best.pt
+    role: active_single_class_port_roi_detector
+    status: small_reviewed_dataset_fit_for_noise_modeling
+
+active_noise_model:
+  path: 3d_modeling/outputs/yolo_detector_audit/port_roi_yolo11n_20260706_val/yolo_noise_model.json
+  source_dataset: reviewed_port_roi_20260706
+  evidence_boundary: E2_E3_small_grouped_validation_noise_model
+  summary:
+    validation_images: 8
+    precision: 1.0
+    recall: 1.0
+    dropout_probability: 0.0
+    false_positive_per_image: 0.0
+    mean_center_error_px: 0.529
+    p95_center_error_px: 0.945
+
+next_steps:
+  - Audit this contract before training or shadow replay.
+  - Use the active port ROI noise model in the next residual-SAC training/evaluation run.
+  - Add hard negatives when rejected or non-port real images become available.
+  - Treat the current detector result as small-sample ROI/noise evidence, not broad detector generalization.

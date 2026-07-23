@@ -1,0 +1,59 @@
+{
+  "name": "Colleague-provided eye-in-hand camera extrinsic",
+  "status": "value_equivalent_to_user_confirmed_20260719_pending_multi_pose_accuracy_validation",
+  "source": "Imported on 2026-06-12 and numerically reconfirmed by the project owner on 2026-07-19",
+  "canonical_user_confirmed_config": "3d_modeling/config/camera_calibration_user_confirmed_20260719.json",
+  "calibration_id": "g9860f_user_confirmed_4cddf2719d80",
+  "interpretation": "Original variable was named T_CAMERA_FLANGE, with comment saying it maps points from camera frame to flange/base chain usage. In this project it is used as T_link6_camera: camera-frame coordinates expressed in link6/flange coordinates.",
+  "source_units": "millimeters",
+  "units": "meters",
+  "raw_T_CAMERA_FLANGE_mm": [
+    [-0.9819, 0.1888, 0.0123, -0.4497],
+    [-0.1886, -0.9819, 0.0197, -31.9137],
+    [0.0158, 0.0170, 0.9997, 23.7627],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "T_link6_camera": [
+    [-0.9819, 0.1888, 0.0123, -0.0004497],
+    [-0.1886, -0.9819, 0.0197, -0.0319137],
+    [0.0158, 0.0170, 0.9997, 0.0237627],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "raw_T_TOOL_FLANGE_mm": [
+    [1.0, 0.0, 0.0, 0.6],
+    [0.0, 1.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0, 55.0],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "camera_model": {
+    "image_width": 640,
+    "image_height": 480,
+    "fx": 626.16601912991,
+    "fy": 625.644158156071,
+    "cx": 283.271956088453,
+    "cy": 272.599191565349,
+    "dist_coeffs": [-0.180105070665943, 0.387495691062819, 0.0, 0.0, 0.0],
+    "near_m": 0.02,
+    "far_m": 1.5,
+    "optical_axis_camera_frame": [0.0, 0.0, 1.0],
+    "up_camera_frame": [0.0, -1.0, 0.0]
+  },
+  "validation_required": [
+    "Confirm that the physical camera stream is 640x480.",
+    "Collect additional validation frames at different robot poses.",
+    "Compare simulated trocar projection with real camera image at the same joint pose.",
+    "Use true trocar measurements and real trocar images for final pose/control experiments."
+  ],
+  "validation_evidence": {
+    "date": "2026-06-12",
+    "target": "GP025 12x9-1.5 chessboard",
+    "inner_corners": [11, 8],
+    "square_size_mm": 1.5,
+    "report": "3d_modeling/outputs/colleague_calibration_validation/colleague_chessboard_live_validation.json",
+    "mean_reprojection_error_px": 0.18622650454575165,
+    "camera_board_z_mm": 45.14927618455354,
+    "normal_convention_base_board_pose_mm_deg": [119.7269692970151, -28.01214870484633, 54.911579804420064, -178.5553195931083, -0.03559665702047607, 94.60025596934537],
+    "inverse_convention_base_board_pose_mm_deg": [124.84960860467967, -28.150192426810943, 101.80199849071518, -178.4830451616689, -0.4008011422217975, 72.84836669576022],
+    "interpretation": "Normal convention is physically plausible: camera is below/near flange and chessboard is about 45 mm in front of the camera along the optical axis."
+  }
+}

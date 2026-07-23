@@ -1,0 +1,25 @@
+{
+  "name": "Mecademic Meca500 initial Modified-DH model",
+  "status": "initial_public_model_needs_real_robot_validation",
+  "source_note": "Initial MDH values exported from the public pybotics predefined mecademic_meca500 model. Verify against official Mecademic documentation and real robot TCP readings before using for final experiments.",
+  "convention": "modified_dh",
+  "columns": ["alpha_rad", "a_mm", "theta_offset_rad", "d_mm"],
+  "joint_order": ["j1", "j2", "j3", "j4", "j5", "j6"],
+  "mdh": [
+    [0.0, 0.0, 0.0, 135.0],
+    [-1.5707963267948966, 0.0, -1.5707963267948966, 0.0],
+    [0.0, 135.0, 0.0, 0.0],
+    [-1.5707963267948966, 38.0, 0.0, 120.0],
+    [1.5707963267948966, 0.0, 0.0, 0.0],
+    [-1.5707963267948966, 0.0, 3.141592653589793, 72.0]
+  ],
+  "units": {
+    "length": "millimeters in file, converted to meters in simulation",
+    "angle": "radians"
+  },
+  "validation_required": [
+    "Compare FK zero pose with official zero-position CAD.",
+    "Query real Meca500 joint/TCP pose at known joint angles.",
+    "Adjust base frame and flange frame definitions until FK and real TCP agree."
+  ]
+}

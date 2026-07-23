@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "profile_id": "pending_physical_uncertainty_measurements",
+  "status": "pending_physical_measurement",
+  "source_type": "pending",
+  "calibration_id": "g9860f_user_confirmed_4cddf2719d80",
+  "parameter_sha256": "4cddf2719d80c0faee2841abf08f6142fdd02d272199bbdbb5dfd1769eccacec",
+  "created_at": null,
+  "valid_until": null,
+  "physical_image_size": {
+    "width": null,
+    "height": null,
+    "physically_reconfirmed": false
+  },
+  "measurements": {
+    "roi_center_error_px": null,
+    "intrinsic_reprojection_error_px": null,
+    "fixture_lateral_error_mm": null,
+    "hand_eye_translation_error_mm": null,
+    "hand_eye_rotation_error_deg": null,
+    "tcp_translation_error_mm": null,
+    "tracking_lateral_error_mm": null,
+    "time_sync_error_ms": null,
+    "maximum_observed_lateral_speed_mm_s": null
+  },
+  "note": "Template only. Populate from traceable physical measurements; never copy G98.60-G engineering stress values into this file."
+}

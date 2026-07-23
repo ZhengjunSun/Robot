@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "name": "G98.60-F user-confirmed Meca500 eye-in-hand calibration parameters",
+  "calibration_id": "g9860f_user_confirmed_4cddf2719d80",
+  "parameter_sha256": "4cddf2719d80c0faee2841abf08f6142fdd02d272199bbdbb5dfd1769eccacec",
+  "status": "user_confirmed_parameters_pending_raw_dataset_and_multi_pose_accuracy_validation",
+  "provided_on": "2026-07-19",
+  "provenance": {
+    "parameter_values": "provided directly by the project owner in the Codex workspace conversation",
+    "value_equivalence": "numerically identical to the project configuration imported on 2026-06-12",
+    "image_size": "640x480 inherited from the existing project configuration; not reconfirmed in the 2026-07-19 message",
+    "raw_calibration_images_available": false,
+    "intrinsic_rms_reprojection_error_available": false,
+    "multi_pose_hand_eye_residual_available": false,
+    "calibration_covariance_available": false
+  },
+  "camera_model": {
+    "model": "opencv_pinhole_radtan",
+    "image_width": 640,
+    "image_height": 480,
+    "camera_matrix": [
+      [626.16601912991, 0.0, 283.271956088453],
+      [0.0, 625.644158156071, 272.599191565349],
+      [0.0, 0.0, 1.0]
+    ],
+    "camera_matrix_inv": [
+      [0.0015970205495813262, 0.0, -0.45239113499335853],
+      [0.0, 0.0015983526529637052, -0.4357096410342368],
+      [0.0, 0.0, 1.0]
+    ],
+    "distortion_order": ["k1", "k2", "p1", "p2", "k3"],
+    "dist_coeffs": [-0.180105070665943, 0.387495691062819, 0.0, 0.0, 0.0]
+  },
+  "transform_convention": {
+    "homogeneous_vector": "column",
+    "raw_T_CAMERA_FLANGE_alias": "T_flange_camera",
+    "T_flange_camera_equation": "p_flange = T_flange_camera @ p_camera",
+    "raw_T_TOOL_FLANGE_alias": "T_flange_tool",
+    "T_flange_tool_equation": "p_flange = T_flange_tool @ p_tool",
+    "T_tool_camera_equation": "T_tool_camera = inverse(T_flange_tool) @ T_flange_camera",
+    "translation_unit_raw": "millimeter",
+    "translation_unit_runtime": "meter"
+  },
+  "raw_T_CAMERA_FLANGE_mm": [
+    [-0.9819, 0.1888, 0.0123, -0.4497],
+    [-0.1886, -0.9819, 0.0197, -31.9137],
+    [0.0158, 0.0170, 0.9997, 23.7627],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "T_link6_camera": [
+    [-0.9819, 0.1888, 0.0123, -0.0004497],
+    [-0.1886, -0.9819, 0.0197, -0.0319137],
+    [0.0158, 0.0170, 0.9997, 0.0237627],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "raw_T_TOOL_FLANGE_mm": [
+    [1.0, 0.0, 0.0, 0.6],
+    [0.0, 1.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0, 55.0],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "T_link6_tool": [
+    [1.0, 0.0, 0.0, 0.0006],
+    [0.0, 1.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0, 0.055],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "historical_single_frame_validation": {
+    "report": "3d_modeling/outputs/colleague_calibration_validation/colleague_chessboard_live_validation.json",
+    "date": "2026-06-12",
+    "mean_reprojection_error_px": 0.18622650454575165,
+    "max_reprojection_error_px": 0.38948279005864145,
+    "scope": "one chessboard frame and one robot pose; not a multi-pose hand-eye accuracy result"
+  },
+  "required_before_real_sensor_promotion": [
+    "confirm the physical camera image width and height",
+    "retain the raw intrinsic calibration images and per-view residuals",
+    "measure multi-pose hand-eye target consistency on independent poses",
+    "measure TCP and tool-tip offset uncertainty",
+    "measure calibration repeatability and covariance or robust bounds"
+  ]
+}

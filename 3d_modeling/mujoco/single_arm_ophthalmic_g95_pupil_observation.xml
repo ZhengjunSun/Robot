@@ -1,0 +1,90 @@
+<mujoco model="single_arm_ophthalmic_g95_hra_pupil_observation">
+  <compiler angle="radian" coordinate="local" meshdir="../external_assets/nih_hra_eye/fundus_texture" texturedir="../external_assets/nih_hra_eye/fundus_texture"/>
+  <option timestep="0.002" gravity="0 0 0"/>
+  <visual>
+    <global offwidth="960" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.002" zfar="1.0"/>
+    <headlight ambient="0.015 0.015 0.015" diffuse="0.025 0.025 0.025" specular="0.01 0.01 0.01"/>
+  </visual>
+  <asset>
+    <mesh name="stare_pupil_projection" file="stare_im0081_pupil_projection_uv.obj"/>
+    <texture name="stare_fundus_texture" type="2d" file="stare_im0081_fundus_texture.png"/>
+    <material name="fundus_texture_mat" texture="stare_fundus_texture" texuniform="false" rgba="1 1 1 1" specular="0.01" shininess="0.02"/>
+    <material name="iris" rgba="0.08 0.34 0.27 1" emission="0.05"/>
+    <material name="sclera" rgba="0.84 0.82 0.77 1" emission="0.06"/>
+    <material name="trocar" rgba="0.05 0.28 0.82 1" emission="0.04"/>
+    <material name="needle" rgba="0.10 0.11 0.13 1" emission="0.03"/>
+    <material name="fiber" rgba="0.92 0.80 0.28 1" emission="0.04"/>
+  </asset>
+  <worldbody>
+    <light name="room_key" pos="0.28 -0.18 0.28" dir="0.5 0.3 -1" diffuse="0.08 0.08 0.075"/>
+    <body name="pupil_observation_proxy" pos="0.352 0 0.160">
+      <!-- Real STARE fundus appearance mapped into the external pupil channel.
+           This is a visual projection only, not a collision or optical model. -->
+      <geom name="fundus_projection" type="mesh" mesh="stare_pupil_projection" pos="0.01105 0 0" material="fundus_texture_mat" contype="0" conaffinity="0"/>
+
+      <!-- Overlapping convex primitives approximate an anterior scleral ring
+           without closing the pupil/corneal observation aperture. -->
+      <geom type="sphere" pos="-0.0105 0.00800 0.00000" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00739 0.00306" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00566 0.00566" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00306 0.00739" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00000 0.00800" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 -0.00306 0.00739" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 -0.00566 0.00566" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 -0.00739 0.00306" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 -0.00800 0.00000" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 -0.00739 -0.00306" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 -0.00566 -0.00566" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 -0.00306 -0.00739" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00000 -0.00800" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00306 -0.00739" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00566 -0.00566" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0105 0.00739 -0.00306" size="0.00400" material="sclera" contype="0" conaffinity="0"/>
+
+      <!-- Convex primitive ring leaves a real central pupil aperture. -->
+      <geom type="sphere" pos="-0.0107 0.00240 0.00000" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00222 0.00092" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00170 0.00170" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00092 0.00222" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00000 0.00240" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00092 0.00222" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00170 0.00170" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00222 0.00092" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00240 0.00000" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00222 -0.00092" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00170 -0.00170" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00092 -0.00222" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00000 -0.00240" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00092 -0.00222" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00170 -0.00170" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00222 -0.00092" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00235 0.00047" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00200 0.00133" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00133 0.00200" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00047 0.00235" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00047 0.00235" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00133 0.00200" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00200 0.00133" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00235 0.00047" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00235 -0.00047" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00200 -0.00133" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00133 -0.00200" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 -0.00047 -0.00235" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00047 -0.00235" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00133 -0.00200" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00200 -0.00133" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+      <geom type="sphere" pos="-0.0107 0.00235 -0.00047" size="0.00110" material="iris" contype="0" conaffinity="0"/>
+
+      <!-- Frozen left-side dimensions: trocar OD/ID/length 2.0/1.0/2.5 mm,
+           needle proxy OD 0.51 mm. Right side remains a planning visual. -->
+      <geom name="left_trocar" type="cylinder" pos="-0.0111 0.0042 0.0012" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar" contype="0" conaffinity="0"/>
+      <geom name="right_trocar_planning" type="cylinder" pos="-0.0111 -0.0042 0.0012" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar" contype="0" conaffinity="0"/>
+      <geom name="needle" type="capsule" fromto="-0.0170 0.0042 0.0012 0.0030 0.0042 0.0012" size="0.000255" material="needle" contype="0" conaffinity="0"/>
+      <geom name="fiber_planning" type="capsule" fromto="-0.0170 -0.0042 0.0012 0.0030 -0.0042 0.0012" size="0.00020" material="fiber" contype="0" conaffinity="0"/>
+      <light name="fiber_tip_light" directional="true" pos="0.0030 -0.0042 0.0012" dir="0.96 0.24 -0.08" diffuse="0.55 0.40 0.25" specular="0.08 0.06 0.04"/>
+    </body>
+    <camera name="pupil_external_view" mode="fixed" pos="0.315 0 0.160" xyaxes="0 -1 0 0 0 1" fovy="25"/>
+  </worldbody>
+</mujoco>

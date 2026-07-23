@@ -1,0 +1,47 @@
+{
+  "name": "trocar_parametric_measured_20260612",
+  "status": "measured_from现场_approximate",
+  "units": "meters",
+  "measurement": {
+    "date": "2026-06-12",
+    "outer_diameter_mm": 2.0,
+    "inner_diameter_mm": 1.0,
+    "visible_length_mm": 2.5,
+    "visible_length_note": "User reported 2-3 mm; midpoint 2.5 mm is used for the initial measured model.",
+    "operator_note": "Measurements were provided onsite; update if caliper re-measurement changes them."
+  },
+  "frame": {
+    "name": "trocar",
+    "origin": "center of the visible/front aperture plane",
+    "x_axis": "ellipse major-axis convention in image-based baseline; physically arbitrary for a circular ring",
+    "y_axis": "x_axis cross z_axis on the aperture plane",
+    "z_axis": "trocar bore axis pointing from the visible/front aperture into the tube"
+  },
+  "dimensions": {
+    "outer_radius_m": 0.001,
+    "inner_radius_m": 0.0005,
+    "length_m": 0.0025,
+    "front_plane_z_m": 0.0,
+    "back_plane_z_m": 0.0025
+  },
+  "mesh": {
+    "segment_count": 96,
+    "visual_rgba": [0.95, 0.52, 0.08, 1.0],
+    "bore_rgba": [0.01, 0.01, 0.012, 1.0],
+    "axis_rgba": [0.10, 0.25, 0.90, 1.0],
+    "output_obj": "3d_modeling/assets/trocar/trocar_parametric_measured_20260612.obj",
+    "output_keypoints": "3d_modeling/assets/trocar/trocar_parametric_measured_20260612_keypoints.json"
+  },
+  "pose_estimation": {
+    "keypoint_angles_deg": [0, 45, 90, 135, 180, 225, 270, 315],
+    "use_rings": ["outer_front", "inner_front"],
+    "preferred_baseline": "automatic orange/dark ring ellipse detection + solvePnP",
+    "note": "Circular ring has rotational symmetry around the bore axis; in-plane roll is a convention, not a robust observable."
+  },
+  "measurement_required": [
+    "Re-measure outer diameter with caliper if possible.",
+    "Re-measure inner diameter with caliper if possible.",
+    "Measure visible length/height more precisely.",
+    "Record whether orange visible rim plane is flush with the physical aperture."
+  ]
+}

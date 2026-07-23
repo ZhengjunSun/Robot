@@ -1,0 +1,30 @@
+{
+  "name": "Initial eye-in-hand camera extrinsic candidate",
+  "status": "legacy_hand_eye_candidate_requires_recalibration",
+  "source": "没有用的代码/archived_after_single_arm_pivot_20260707/trocar_robot_servo_safe.py::T_Camera_Flange",
+  "interpretation": "Used here as T_link6_camera candidate because legacy code multiplies T_base_flange @ T_Camera_Flange @ T_board_camera.",
+  "units": "meters",
+  "T_link6_camera": [
+    [-0.4148, 0.9099, -0.0062, -0.0002906],
+    [-0.9098, -0.4148, -0.0127, -0.0329047],
+    [-0.0141, 0.0004, 0.9999, 0.0184907],
+    [0.0, 0.0, 0.0, 1.0]
+  ],
+  "camera_model": {
+    "image_width": 640,
+    "image_height": 480,
+    "fx": 630.334117275105,
+    "fy": 628.636068386433,
+    "cx": 296.716741234589,
+    "cy": 280.69092649891,
+    "near_m": 0.02,
+    "far_m": 1.5,
+    "optical_axis_camera_frame": [0.0, 0.0, 1.0],
+    "up_camera_frame": [0.0, -1.0, 0.0]
+  },
+  "validation_required": [
+    "Re-estimate camera intrinsics with calibration board.",
+    "Re-estimate T_link6_camera using hand-eye calibration.",
+    "Compare simulated trocar projection with real camera image at the same joint pose."
+  ]
+}

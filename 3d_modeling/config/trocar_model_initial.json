@@ -1,0 +1,41 @@
+{
+  "name": "trocar_parametric_initial",
+  "status": "initial_placeholder_waiting_for_physical_measurement",
+  "units": "meters",
+  "frame": {
+    "name": "trocar",
+    "origin": "center of the visible/front aperture plane",
+    "x_axis": "arbitrary reference direction on the aperture plane",
+    "y_axis": "x_axis cross z_axis on the aperture plane",
+    "z_axis": "trocar bore axis pointing from the visible/front aperture into the tube"
+  },
+  "dimensions": {
+    "outer_radius_m": 0.020,
+    "inner_radius_m": 0.008,
+    "length_m": 0.055,
+    "front_plane_z_m": 0.0,
+    "back_plane_z_m": 0.055
+  },
+  "mesh": {
+    "segment_count": 96,
+    "visual_rgba": [0.18, 0.52, 0.72, 1.0],
+    "bore_rgba": [0.01, 0.01, 0.012, 1.0],
+    "axis_rgba": [0.90, 0.20, 0.14, 1.0],
+    "output_obj": "3d_modeling/assets/trocar/trocar_parametric_initial.obj",
+    "output_keypoints": "3d_modeling/assets/trocar/trocar_parametric_initial_keypoints.json"
+  },
+  "pose_estimation": {
+    "keypoint_angles_deg": [0, 45, 90, 135, 180, 225, 270, 315],
+    "use_rings": ["outer_front", "inner_front"],
+    "preferred_baseline": "known-ring-keypoints + solvePnP",
+    "note": "Replace placeholder dimensions with caliper measurements before final experiments."
+  },
+  "measurement_required": [
+    "outer diameter",
+    "inner diameter",
+    "tube/visible height",
+    "front bevel/chamfer if visible",
+    "whether the visible rim is circular and planar",
+    "fixed holder geometry and pose relative to robot base"
+  ]
+}

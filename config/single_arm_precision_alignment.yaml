@@ -1,0 +1,159 @@
+task:
+  target_standoff_mm: 18.0
+  target_insert_depth_mm: 8.0
+  success_lateral_mm: 0.20
+  success_depth_mm: 0.20
+  success_axis_deg: 1.00
+  hard_lateral_mm: 8.0
+  hard_depth_mm: 8.0
+  hard_axis_deg: 40.0
+
+episode:
+  max_steps: 60
+  step_time_s: 0.20
+
+initial_state:
+  lateral_xy_mm: [2.2, -1.4]
+  depth_error_mm: 1.2
+  axis_error_xy_deg: [8.0, -5.0]
+  insertion_depth_mm: 0.0
+
+randomization:
+  enabled: true
+  lateral_xy_mm: 3.0
+  depth_error_mm: 2.0
+  axis_error_deg: 16.0
+
+curriculum:
+  enabled: false
+  stage: C2
+  stages:
+    C0:
+      task:
+        target_insert_depth_mm: 4.0
+        success_lateral_mm: 1.00
+        success_depth_mm: 1.00
+        success_axis_deg: 4.00
+      reward:
+        success_bonus: 40.0
+        step_penalty: 0.03
+    C1:
+      task:
+        target_insert_depth_mm: 6.0
+        success_lateral_mm: 0.45
+        success_depth_mm: 0.45
+        success_axis_deg: 2.00
+      reward:
+        success_bonus: 60.0
+        step_penalty: 0.04
+    C2:
+      task:
+        target_insert_depth_mm: 8.0
+        success_lateral_mm: 0.20
+        success_depth_mm: 0.20
+        success_axis_deg: 1.00
+      reward:
+        success_bonus: 80.0
+        step_penalty: 0.05
+
+perception:
+  enabled: true
+  dropout_probability: 0.03
+  min_confidence: 0.30
+  center_noise_std_mm: 0.08
+  depth_noise_std_mm: 0.16
+  axis_noise_std_deg: 0.35
+  confidence_noise_std: 0.04
+
+observation:
+  normalize: true
+  scales:
+    lateral_mm: 8.0
+    depth_mm: 8.0
+    axis_deg: 40.0
+    insertion_depth_mm: 8.0
+    translation_action_mm: 2.85
+    rotation_action_deg: 4.80
+    insert_action_mm: 0.85
+    joint_angle_deg: 180.0
+    joint_velocity_deg_s: 120.0
+    joint_limit_margin_deg: 180.0
+    task_velocity_translation_mm_s: 15.0
+    task_velocity_rotation_deg_s: 24.0
+    task_velocity_insert_mm_s: 5.0
+
+joint_model:
+  enabled: true
+  mode: proxy_task_coupling
+  initial_angles_deg: [0.0, 18.9, 37.0, 0.0, 34.2, 0.0]
+  lower_limits_deg: [-180.0, -180.0, -180.0, -180.0, -180.0, -180.0]
+  upper_limits_deg: [180.0, 180.0, 180.0, 180.0, 180.0, 180.0]
+  hard_margin_deg: 2.0
+  velocity_filter_alpha: 0.35
+  task_to_joint_gain:
+    - [0.35, -0.12, 0.10, 0.18, -0.08, 0.04]
+    - [0.08, 0.40, -0.12, -0.05, 0.16, 0.02]
+    - [-0.10, 0.15, 0.38, 0.10, 0.10, 0.05]
+    - [0.05, -0.05, 0.08, 0.42, -0.15, 0.03]
+    - [-0.04, 0.06, 0.05, -0.10, 0.45, 0.03]
+    - [0.02, 0.02, 0.03, 0.05, 0.05, 0.18]
+
+controller:
+  k_lateral: 0.90
+  k_depth: 0.70
+  k_axis: 0.72
+  insertion_step_mm: 0.55
+  advance_gate_lateral_mm: 0.42
+  advance_gate_depth_mm: 0.42
+  advance_gate_axis_deg: 2.20
+
+safety:
+  max_base_translation_step_mm: 2.50
+  max_base_rotation_step_deg: 4.00
+  max_base_insert_step_mm: 0.60
+  max_residual_translation_step_mm: 0.35
+  max_residual_rotation_step_deg: 0.80
+  max_residual_insert_step_mm: 0.25
+  allow_insert_lateral_mm: 0.55
+  allow_insert_depth_mm: 0.55
+  allow_insert_axis_deg: 2.80
+
+residual_gate:
+  enabled: false
+  max_scale: 0.45
+  far_scale: 0.10
+  full_scale_lateral_mm: 0.55
+  full_scale_depth_mm: 0.55
+  full_scale_axis_deg: 2.80
+  post_insert_remaining_mm: 0.05
+  post_insert_scale: 0.20
+
+dynamics:
+  translation_execution_noise_mm: 0.020
+  rotation_execution_noise_deg: 0.045
+  tremor_lateral_std_mm: 0.018
+  tremor_depth_std_mm: 0.012
+  tremor_axis_std_deg: 0.035
+  contact_lateral_gain: 0.050
+  contact_axis_gain: 0.025
+
+reward:
+  precision_improvement: 2.0
+  insert_progress: 4.0
+  lateral_penalty: 0.10
+  depth_penalty: 0.08
+  axis_penalty: 0.06
+  step_penalty: 0.05
+  action_penalty: 0.030
+  smoothness_penalty: 0.050
+  residual_penalty: 0.080
+  precision_regression_penalty: 4.000
+  action_reversal_penalty: 0.080
+  post_insert_precision_penalty: 6.000
+  joint_velocity_penalty: 0.003
+  joint_limit_penalty: 0.040
+  advance_block_penalty: 0.30
+  quality_refuse_penalty: 0.08
+  timeout_penalty: 20.0
+  failure_penalty: 40.0
+  success_bonus: 80.0

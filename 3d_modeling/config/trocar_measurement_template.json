@@ -1,0 +1,12 @@
+{
+  "status": "fill_with_physical_measurements",
+  "units": "millimeters",
+  "measurement_date": "",
+  "operator": "",
+  "outer_diameter_mm": null,
+  "inner_diameter_mm": null,
+  "visible_length_mm": null,
+  "rim_thickness_mm": null,
+  "front_bevel_or_chamfer": "",
+  "notes": "Measure with caliper if possible. If only a ruler is available, record the uncertainty in notes."
+}

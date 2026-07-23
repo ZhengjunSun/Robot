@@ -1,0 +1,39 @@
+<mujoco model="g95_hra_eye_external_preview">
+  <compiler angle="radian" coordinate="local" meshdir="../external_assets/nih_hra_eye/converted"/>
+  <option timestep="0.002" gravity="0 0 0"/>
+  <visual>
+    <global offwidth="960" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.003" zfar="10.0"/>
+    <headlight ambient="0.22 0.22 0.22" diffuse="0.62 0.60 0.57" specular="0.22 0.22 0.22"/>
+  </visual>
+  <asset>
+    <mesh name="hra_sclera" file="VH_F_sclera_R.obj"/>
+    <mesh name="hra_cornea" file="VH_F_cornea_R.obj"/>
+    <mesh name="hra_conjunctiva" file="VH_F_bulbar_conjunctiva_R.obj"/>
+    <mesh name="hra_iris" file="VH_F_iris_R.obj"/>
+    <mesh name="hra_pupil" file="VH_F_pupil_R.obj"/>
+    <mesh name="hra_limbus" file="VH_F_corneo_scleral_junction_R.obj"/>
+    <material name="sclera_mat" rgba="0.94 0.91 0.84 1" specular="0.25" shininess="0.45"/>
+    <material name="cornea_mat" rgba="0.58 0.84 0.94 0.22" specular="0.75" shininess="0.9"/>
+    <material name="conjunctiva_mat" rgba="0.84 0.45 0.47 0.30" specular="0.22"/>
+    <material name="iris_mat" rgba="0.055 0.25 0.20 1" specular="0.28" shininess="0.55"/>
+    <material name="pupil_mat" rgba="0.006 0.006 0.008 1" specular="0.08"/>
+    <material name="limbus_mat" rgba="0.58 0.70 0.67 0.58" specular="0.35"/>
+  </asset>
+  <worldbody>
+    <light name="key" pos="0.030 -0.030 0.055" dir="-0.3 0.3 -1" diffuse="0.90 0.84 0.77"/>
+    <light name="fill" pos="-0.035 0.025 0.035" dir="0.5 -0.2 -0.6" diffuse="0.28 0.35 0.42"/>
+    <body name="hra_eye">
+      <geom type="mesh" mesh="hra_sclera" material="sclera_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_conjunctiva" material="conjunctiva_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_limbus" material="limbus_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_iris" material="iris_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_pupil" material="pupil_mat" contype="0" conaffinity="0"/>
+      <geom type="mesh" mesh="hra_cornea" material="cornea_mat" contype="0" conaffinity="0"/>
+    </body>
+    <camera name="hra_front" mode="fixed" pos="0 0 0.060" xyaxes="1 0 0 0 1 0" fovy="31"/>
+    <camera name="hra_oblique" mode="targetbody" target="hra_eye" pos="0.038 -0.040 0.040" fovy="28"/>
+    <camera name="hra_side" mode="fixed" pos="0.055 0 0" xyaxes="0 1 0 0 0 1" fovy="31"/>
+  </worldbody>
+</mujoco>

@@ -1,0 +1,49 @@
+<mujoco model="single_arm_ophthalmic_g95_full_eye_overview">
+  <compiler angle="radian" coordinate="local"/>
+  <option timestep="0.002" gravity="0 0 0"/>
+  <visual>
+    <global offwidth="960" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.003" zfar="1.0"/>
+    <headlight ambient="0.20 0.20 0.20" diffuse="0.52 0.52 0.50" specular="0.12 0.12 0.12"/>
+  </visual>
+  <asset>
+    <material name="sclera" rgba="0.93 0.91 0.86 1"/>
+    <material name="cornea" rgba="0.55 0.86 0.98 0.16"/>
+    <material name="iris" rgba="0.07 0.31 0.25 1"/>
+    <material name="pupil" rgba="0.008 0.008 0.010 1"/>
+    <material name="trocar" rgba="0.05 0.28 0.82 1"/>
+    <material name="metal" rgba="0.72 0.75 0.77 1"/>
+    <material name="needle" rgba="0.08 0.09 0.11 1"/>
+    <material name="fiber" rgba="0.92 0.78 0.24 1"/>
+    <material name="vessel" rgba="0.42 0.025 0.025 1"/>
+  </asset>
+  <worldbody>
+    <light name="key" pos="0.30 -0.10 0.24" dir="0.4 0.2 -1" diffuse="0.75 0.73 0.69"/>
+    <light name="fill" pos="0.31 0.10 0.20" dir="0.7 -0.3 -0.2" diffuse="0.22 0.25 0.28"/>
+    <body name="complete_eye" pos="0.352 0 0.160">
+      <!-- Complete 24 mm eyeball envelope. This scene is visual-only. -->
+      <geom name="sclera" type="sphere" size="0.012" material="sclera" contype="0" conaffinity="0"/>
+      <geom name="cornea" type="ellipsoid" pos="-0.0114 0 0" size="0.0026 0.0057 0.0057" material="cornea" contype="0" conaffinity="0"/>
+      <geom name="iris" type="cylinder" pos="-0.01205 0 0" euler="0 1.57079632679 0" size="0.0035 0.00010" material="iris" contype="0" conaffinity="0"/>
+      <geom name="pupil" type="cylinder" pos="-0.01218 0 0" euler="0 1.57079632679 0" size="0.00125 0.00008" material="pupil" contype="0" conaffinity="0"/>
+
+      <!-- A few superficial vessel proxies make the globe orientation legible. -->
+      <geom type="capsule" fromto="-0.0117 0.0062 0.0008 -0.0108 0.0094 0.0020" size="0.000065" material="vessel" contype="0" conaffinity="0"/>
+      <geom type="capsule" fromto="-0.0116 -0.0060 0.0010 -0.0105 -0.0093 0.0025" size="0.000060" material="vessel" contype="0" conaffinity="0"/>
+      <geom type="capsule" fromto="-0.0117 0.0010 -0.0060 -0.0107 0.0022 -0.0092" size="0.000055" material="vessel" contype="0" conaffinity="0"/>
+
+      <!-- Frozen left-side dimensions; right trocar/fiber remain planning visuals. -->
+      <geom name="left_trocar" type="cylinder" pos="-0.0111 0.0042 0.0012" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar" contype="0" conaffinity="0"/>
+      <geom name="left_flange" type="cylinder" pos="-0.01245 0.0042 0.0012" euler="0 1.57079632679 0" size="0.00145 0.00018" material="metal" contype="0" conaffinity="0"/>
+      <geom name="right_trocar_planning" type="cylinder" pos="-0.0111 -0.0042 0.0012" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar" contype="0" conaffinity="0"/>
+      <geom name="right_flange_planning" type="cylinder" pos="-0.01245 -0.0042 0.0012" euler="0 1.57079632679 0" size="0.00145 0.00018" material="metal" contype="0" conaffinity="0"/>
+      <geom name="needle" type="capsule" fromto="-0.0200 0.0042 0.0012 0.0030 0.0042 0.0012" size="0.000255" material="needle" contype="0" conaffinity="0"/>
+      <geom name="fiber_planning" type="capsule" fromto="-0.0200 -0.0042 0.0012 0.0030 -0.0042 0.0012" size="0.00020" material="fiber" contype="0" conaffinity="0"/>
+    </body>
+
+    <camera name="full_eye_front" mode="fixed" pos="0.315 0 0.160" xyaxes="0 -1 0 0 0 1" fovy="40"/>
+    <camera name="full_eye_oblique" mode="targetbody" target="complete_eye" pos="0.315 -0.032 0.184" fovy="38"/>
+    <camera name="full_eye_side" mode="fixed" pos="0.352 -0.050 0.160" xyaxes="1 0 0 0 0 1" fovy="36"/>
+  </worldbody>
+</mujoco>

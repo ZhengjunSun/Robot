@@ -1,0 +1,41 @@
+{
+  "name": "Meca500 eye-in-hand ChArUco hand-eye calibration",
+  "status": "user_reconfirmed_intrinsics_pending_raw_dataset_quality_validation",
+  "robot": {
+    "ip_address": "192.168.0.100",
+    "read_only": true
+  },
+  "camera": {
+    "index": 0,
+    "image_width": 640,
+    "image_height": 480,
+    "fx": 626.16601912991,
+    "fy": 625.644158156071,
+    "cx": 283.271956088453,
+    "cy": 272.599191565349,
+    "dist_coeffs": [-0.180105070665943, 0.387495691062819, 0.0, 0.0, 0.0],
+    "source": "imported on 2026-06-12 and numerically reconfirmed by the project owner on 2026-07-19",
+    "calibration_id": "g9860f_user_confirmed_4cddf2719d80",
+    "image_size_source": "existing project configuration; not reconfirmed in the 2026-07-19 message"
+  },
+  "target": {
+    "type": "charuco",
+    "dictionary": "DICT_5X5_100",
+    "squares_x": 7,
+    "squares_y": 5,
+    "square_length_m": 0.03,
+    "marker_length_m": 0.022,
+    "min_corners": 8,
+    "print_dpi": 300,
+    "a4_landscape": true
+  },
+  "robot_kinematics": {
+    "mdh_config": "3d_modeling/config/meca500_mdh_home_calibrated_candidate.json",
+    "preferred_source": "joint_fk"
+  },
+  "collection": {
+    "recommended_samples": 20,
+    "minimum_samples": 8,
+    "instruction": "Move the robot/camera to diverse safe views of a fixed ChArUco board. This pipeline only reads state and camera frames."
+  }
+}

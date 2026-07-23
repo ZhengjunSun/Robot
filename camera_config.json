@@ -1,0 +1,18 @@
+{
+  "_comment": "摄像头配置文件 - HD Camera",
+  "camera": {
+    "index": 0,
+    "_comment": "摄像头索引，0=当前MECADEMIC末端相机"
+  },
+  "camera_settings": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30
+  },
+  "_usage": {
+    "test_safe_system.py": "读取此配置",
+    "没有用的代码/archived_after_single_arm_pivot_20260707/trocar_robot_servo_safe.py": "读取此配置",
+    "trocar_robot_servo.py": "读取此配置",
+    "visual_control.py": "当前项目统一使用VideoCapture(0)"
+  }
+}

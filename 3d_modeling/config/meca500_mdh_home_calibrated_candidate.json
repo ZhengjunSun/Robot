@@ -1,0 +1,28 @@
+{
+  "name": "Mecademic Meca500 Modified-DH home-calibrated candidate",
+  "status": "candidate_from_historical_home_pose_only",
+  "source_note": "Derived from the initial MDH model by applying a -2 mm correction to d6. This exactly matches the historical HOME_JOINTS initial_pose records, but must be validated using multiple live joint/TCP samples before final use.",
+  "convention": "modified_dh",
+  "columns": ["alpha_rad", "a_mm", "theta_offset_rad", "d_mm"],
+  "joint_order": ["j1", "j2", "j3", "j4", "j5", "j6"],
+  "mdh": [
+    [0.0, 0.0, 0.0, 135.0],
+    [-1.5707963267948966, 0.0, -1.5707963267948966, 0.0],
+    [0.0, 135.0, 0.0, 0.0],
+    [-1.5707963267948966, 38.0, 0.0, 120.0],
+    [1.5707963267948966, 0.0, 0.0, 0.0],
+    [-1.5707963267948966, 0.0, 3.141592653589793, 70.0]
+  ],
+  "calibration": {
+    "changed_parameter": "d6_mm",
+    "initial_value_mm": 72.0,
+    "candidate_value_mm": 70.0,
+    "estimated_correction_mm": -2.0,
+    "evidence": "Historical baseline reports record initial_pose after moving to HOME_JOINTS. Initial MDH FK matched rotation and X/Y, with a consistent 2 mm world-Z offset at HOME_JOINTS."
+  },
+  "validation_required": [
+    "Collect live GetRtTargetJointPos/GetRtTargetCartPos samples at multiple non-collinear joint states.",
+    "Confirm that the -2 mm d6 correction reduces position error across all poses, not only HOME_JOINTS.",
+    "Only then use this candidate model for URDF/MJCF finalization."
+  ]
+}

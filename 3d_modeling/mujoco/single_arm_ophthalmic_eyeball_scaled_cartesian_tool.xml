@@ -1,0 +1,73 @@
+<mujoco model="single_arm_ophthalmic_eyeball_scaled_cartesian_tool">
+  <compiler angle="radian" coordinate="local"/>
+  <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
+
+  <default>
+    <joint damping="0.02" armature="0.0002" limited="true"/>
+    <geom margin="0.00002" solref="0.006 1" solimp="0.93 0.98 0.001"/>
+  </default>
+
+  <visual>
+    <global offwidth="640" offheight="480"/>
+    <quality shadowsize="2048"/>
+    <map znear="0.003" zfar="1.0"/>
+  </visual>
+
+  <asset>
+    <texture name="matte_tex" type="2d" builtin="checker" rgb1="0.80 0.80 0.78" rgb2="0.68 0.70 0.70" width="128" height="128"/>
+    <material name="ground_mat" texture="matte_tex" texrepeat="2 2" rgba="0.82 0.82 0.80 1"/>
+    <material name="sclera_mat" rgba="0.96 0.93 0.86 1"/>
+    <material name="cornea_mat" rgba="0.72 0.94 1.00 0.32"/>
+    <material name="iris_mat" rgba="0.10 0.32 0.48 1"/>
+    <material name="pupil_mat" rgba="0.01 0.01 0.012 1"/>
+    <material name="cannula_blue_mat" rgba="0.05 0.28 0.82 1"/>
+    <material name="cannula_metal_mat" rgba="0.72 0.75 0.76 1"/>
+    <material name="cannula_dark_mat" rgba="0.015 0.015 0.018 1"/>
+    <material name="port_collision_mat" rgba="0.90 0.16 0.08 0.10"/>
+    <material name="tool_mat" rgba="0.05 0.05 0.055 1"/>
+    <material name="stage_mat" rgba="0.55 0.62 0.68 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="key_light" pos="0.18 -0.35 0.45" dir="0.25 0.45 -1" diffuse="0.90 0.90 0.86"/>
+    <light name="fill_light" pos="0.25 0.12 0.28" dir="0.7 -0.15 -0.45" diffuse="0.35 0.38 0.40"/>
+    <geom name="ground" type="plane" pos="0 0 0" size="1 1 0.01" material="ground_mat" contype="0" conaffinity="0"/>
+
+    <!-- Scale-corrected procedural eye: 24 mm eyeball diameter, no head or eyelids. -->
+    <geom name="sclera_visual" type="sphere" pos="0.352 0 0.160" size="0.012" material="sclera_mat" contype="0" conaffinity="0"/>
+    <geom name="cornea_visual" type="ellipsoid" pos="0.3415 -0.006 0.162" size="0.0028 0.0056 0.0056" material="cornea_mat" contype="0" conaffinity="0"/>
+    <geom name="iris_visual" type="cylinder" pos="0.3403 -0.006 0.162" euler="0 1.57079632679 0" size="0.0035 0.00018" material="iris_mat" contype="0" conaffinity="0"/>
+    <geom name="pupil_visual" type="cylinder" pos="0.3399 -0.006 0.162" euler="0 1.57079632679 0" size="0.00125 0.00020" material="pupil_mat" contype="0" conaffinity="0"/>
+    <geom name="eye_surface" type="sphere" pos="0.352 0 0.160" size="0.012" rgba="0.96 0.93 0.86 0.0" contype="0" conaffinity="0"/>
+
+    <!-- Ophthalmic trocar/cannula proxy: 25G-like 0.5 mm class sleeve plus small visual flange. -->
+    <geom name="cannula_sleeve_visual" type="cylinder" pos="0.3400 0 0.160" euler="0 1.57079632679 0" size="0.00026 0.0030" material="cannula_blue_mat" contype="0" conaffinity="0"/>
+    <geom name="cannula_flange_visual" type="cylinder" pos="0.3389 0 0.160" euler="0 1.57079632679 0" size="0.00115 0.00022" material="cannula_metal_mat" contype="0" conaffinity="0"/>
+    <geom name="cannula_inner_dark_visual" type="cylinder" pos="0.3386 0 0.160" euler="0 1.57079632679 0" size="0.00034 0.00008" material="cannula_dark_mat" contype="0" conaffinity="0"/>
+
+    <geom name="port_wall_y_pos" type="box" pos="0.340 0.00047 0.160" size="0.00035 0.00012 0.00150" material="port_collision_mat" contype="1" conaffinity="1"/>
+    <geom name="port_wall_y_neg" type="box" pos="0.340 -0.00047 0.160" size="0.00035 0.00012 0.00150" material="port_collision_mat" contype="1" conaffinity="1"/>
+    <geom name="port_wall_z_pos" type="box" pos="0.340 0 0.16047" size="0.00035 0.00150 0.00012" material="port_collision_mat" contype="1" conaffinity="1"/>
+    <geom name="port_wall_z_neg" type="box" pos="0.340 0 0.15953" size="0.00035 0.00150 0.00012" material="port_collision_mat" contype="1" conaffinity="1"/>
+
+    <body name="tool_carriage" pos="0.285 0 0.160">
+      <joint name="tool_x" type="slide" axis="1 0 0" range="-0.030 0.080"/>
+      <joint name="tool_y" type="slide" axis="0 1 0" range="-0.025 0.025"/>
+      <joint name="tool_z" type="slide" axis="0 0 1" range="-0.025 0.025"/>
+      <geom name="tool_carriage_geom" type="box" pos="-0.010 0 0" size="0.005 0.005 0.005" material="stage_mat" contype="0" conaffinity="0"/>
+      <geom name="eye_in_hand_camera_body" type="box" pos="-0.010 0 0.010" size="0.004 0.003 0.0025" rgba="0.02 0.02 0.025 1" contype="0" conaffinity="0"/>
+      <camera name="eye_in_hand" mode="fixed" pos="-0.010 0 0.010" xyaxes="0 -1 0 0 0 1" fovy="41.9741"/>
+      <geom name="board_level_camera_body" type="box" pos="-0.012 -0.006 0.006" size="0.0035 0.0060 0.0045" rgba="0.015 0.016 0.018 1" contype="0" conaffinity="0"/>
+      <camera name="eye_in_hand_side_macro" mode="fixed" pos="-0.012 -0.006 0.006" xyaxes="0 -1 0 0 0 1" fovy="35.0"/>
+      <geom name="instrument_shaft" type="capsule" fromto="0 0 0 0.055 0 0" size="0.00028" material="tool_mat" contype="1" conaffinity="1" density="7800"/>
+      <geom name="instrument_tip_visual" type="capsule" fromto="0.052 0 0 0.057 0 0" size="0.00034" material="cannula_metal_mat" contype="0" conaffinity="0"/>
+      <site name="tool_tip" pos="0.055 0 0" size="0.00055" rgba="0.05 0.2 1 1"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="tool_x_position" joint="tool_x" kp="800" ctrlrange="-0.030 0.080"/>
+    <position name="tool_y_position" joint="tool_y" kp="800" ctrlrange="-0.025 0.025"/>
+    <position name="tool_z_position" joint="tool_z" kp="800" ctrlrange="-0.025 0.025"/>
+  </actuator>
+</mujoco>

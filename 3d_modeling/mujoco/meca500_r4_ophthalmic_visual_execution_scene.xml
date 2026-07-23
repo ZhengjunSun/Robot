@@ -1,0 +1,203 @@
+<mujoco model="meca500_r4_ophthalmic_visual_execution_scene">
+  <!--
+    E2 visual/kinematic presentation scene for the single-arm ophthalmic task.
+    Meca500 CAD link geometry and joint bounds are retained from the official-
+    geometry proxy. Inertia, collision behavior, servo gains, eye fixture pose,
+    and camera calibration remain uncalibrated simulation parameters. This
+    scene does not replace the frozen G94/G96 all-wall contact evaluator.
+  -->
+  <compiler angle="radian" coordinate="local" eulerseq="xyz"/>
+  <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720"/>
+    <quality shadowsize="4096"/>
+    <map znear="0.002" zfar="1.2"/>
+    <headlight ambient="0.38 0.38 0.38" diffuse="0.45 0.45 0.45" specular="0.14 0.14 0.14"/>
+  </visual>
+
+  <default>
+    <joint damping="0.08" armature="0.002" limited="true"/>
+    <geom contype="0" conaffinity="0"/>
+    <position kp="260" kv="28"/>
+  </default>
+
+  <asset>
+    <mesh name="meca_link_0" file="link_0_visual.obj"/>
+    <mesh name="meca_link_1" file="link_1_visual.obj"/>
+    <mesh name="meca_link_2" file="link_2_visual.obj"/>
+    <mesh name="meca_link_3" file="link_3_visual.obj"/>
+    <mesh name="meca_link_4" file="link_4_visual.obj"/>
+    <mesh name="meca_link_5" file="link_5_visual.obj"/>
+    <mesh name="meca_link_6" file="link_6_flange_clean_visual.obj"/>
+    <!-- NIH/HRA Visible Human eye anatomy, retained as visual-only meshes. -->
+    <mesh name="hra_sclera_mesh" file="VH_F_sclera_R.obj"/>
+    <mesh name="hra_bulbar_conjunctiva_mesh" file="VH_F_bulbar_conjunctiva_R.obj"/>
+    <mesh name="hra_corneoscleral_junction_mesh" file="VH_F_corneo_scleral_junction_R.obj"/>
+    <mesh name="hra_cornea_mesh" file="VH_F_cornea_R.obj"/>
+    <mesh name="hra_iris_mesh" file="VH_F_iris_R.obj"/>
+    <mesh name="hra_pupil_mesh" file="VH_F_pupil_R.obj"/>
+    <mesh name="hra_lens_mesh" file="VH_F_lens_R.obj"/>
+    <mesh name="hra_vitreous_mesh" file="VH_F_vitreous_humor_R.obj"/>
+    <mesh name="hra_retina_mesh" file="VH_F_retina_R.obj"/>
+    <mesh name="hra_choroid_mesh" file="VH_F_optic_choroid_R.obj"/>
+    <mesh name="hra_optic_disc_mesh" file="VH_F_optic_disc_R.obj"/>
+    <mesh name="hra_macula_mesh" file="VH_F_macula_lutea_R.obj"/>
+    <mesh name="hra_fovea_mesh" file="VH_F_fovea_R.obj"/>
+    <mesh name="hra_fundus_mesh" file="VH_F_retina_R_stare_im0081_uv.obj"/>
+    <mesh name="hra_pupil_fundus_projection_mesh" file="stare_im0081_pupil_projection_uv.obj"/>
+    <texture name="hra_fundus_texture" type="2d" file="stare_im0081_fundus_texture.png"/>
+    <material name="meca_blue" rgba="0.05 0.40 0.80 1"/>
+    <material name="meca_light" rgba="0.80 0.84 0.90 1"/>
+    <material name="flange_isolation" rgba="0.025 0.030 0.036 1"/>
+    <material name="flange_face" rgba="0.62 0.67 0.72 1"/>
+    <material name="flange_fastener" rgba="0.12 0.15 0.18 1"/>
+    <!-- Brushed-metal needle finish keeps the 0.51 mm shaft visible in inspection views. -->
+    <material name="tool_mat" rgba="0.58 0.63 0.70 1"/>
+    <material name="bench_mat" rgba="0.10 0.12 0.16 1"/>
+    <material name="sclera_mat" rgba="0.90 0.86 0.79 1"/>
+    <material name="conjunctiva_mat" rgba="0.98 0.86 0.82 0.62"/>
+    <material name="limbus_mat" rgba="0.42 0.30 0.19 1"/>
+    <material name="cornea_mat" rgba="0.54 0.82 0.92 0.18"/>
+    <material name="iris_mat" rgba="0.055 0.18 0.12 1"/>
+    <!-- The pupil is an aperture for the external observer, not an opaque cap. -->
+    <material name="pupil_mat" rgba="0.003 0.004 0.006 0"/>
+    <material name="lens_mat" rgba="0.82 0.92 0.95 0.035"/>
+    <material name="vitreous_mat" rgba="0.60 0.79 0.88 0"/>
+    <material name="retina_mat" rgba="0.72 0.15 0.11 0.04"/>
+    <material name="fundus_mat" texture="hra_fundus_texture" rgba="1 1 1 1" emission="0.28"/>
+    <material name="disc_mat" rgba="0.95 0.72 0.46 0.72"/>
+    <material name="macula_mat" rgba="0.46 0.06 0.06 0.65"/>
+    <material name="trocar_mat" rgba="0.00 0.46 0.64 1"/>
+    <material name="lumen_mat" rgba="0.012 0.014 0.018 1"/>
+    <material name="safe_mat" rgba="0.00 0.62 0.45 0.55"/>
+  </asset>
+
+  <worldbody>
+    <light name="key_light" pos="0.12 -0.42 0.55" dir="0.32 0.62 -0.72" diffuse="0.95 0.95 0.92" specular="0.34 0.34 0.34"/>
+    <light name="fill_light" pos="0.52 0.28 0.38" dir="-0.55 -0.32 -0.45" diffuse="0.55 0.64 0.74" specular="0.18 0.20 0.22"/>
+    <light name="eye_light" pos="0.29 0.00 0.32" dir="0.25 0 -0.75" diffuse="0.42 0.42 0.42"/>
+    <geom name="operating_bench" type="box" pos="0.28 0 0.015" size="0.42 0.30 0.015" material="bench_mat"/>
+    <geom name="bench_inlay" type="cylinder" pos="0.26110 0 0.032" size="0.018 0.0015" rgba="0.28 0.31 0.36 1"/>
+
+    <!-- Complete Meca500 R4 visual/kinematic chain. Joint ranges match config/meca500_official_specifications_20260711.yaml. -->
+    <!--
+      Upright factory-style base. BRF +x is the official front direction; the
+      yaw below maps it to global -x so the base on the eye's right faces the
+      surgical field instead of presenting its side to it.
+    -->
+    <body name="meca_base_mount" pos="0.502500 0.006400 0.030000" quat="0 0 0 1">
+      <geom name="link_0_visual" type="mesh" mesh="meca_link_0" material="meca_blue" mass="0"/>
+      <body name="link_1" pos="0 0 0.135">
+        <joint name="joint_1" type="hinge" axis="0 0 1" range="-3.054326191 3.054326191"/>
+        <inertial pos="0 0 0" mass="0.85" diaginertia="0.0012 0.0012 0.0010"/>
+        <geom name="link_1_visual" type="mesh" mesh="meca_link_1" material="meca_light" mass="0"/>
+        <body name="link_2" euler="-1.570796327 -1.570796327 0">
+          <joint name="joint_2" type="hinge" axis="0 0 1" range="-1.221730476 1.570796327"/>
+          <inertial pos="0.065 0 0" mass="0.95" diaginertia="0.0025 0.0025 0.0012"/>
+          <geom name="link_2_visual" type="mesh" mesh="meca_link_2" material="meca_light" mass="0"/>
+          <body name="link_3" pos="0.135 0 0">
+            <joint name="joint_3" type="hinge" axis="0 0 1" range="-2.356194490 1.221730476"/>
+            <inertial pos="0.05 0.03 0" mass="0.80" diaginertia="0.0018 0.0018 0.0009"/>
+            <geom name="link_3_visual" type="mesh" mesh="meca_link_3" material="meca_blue" mass="0"/>
+            <body name="link_4" pos="0.038 0.120 0" euler="-1.570796327 0 0">
+              <joint name="joint_4" type="hinge" axis="0 0 1" range="-2.967059728 2.967059728"/>
+              <inertial pos="0 0 0" mass="0.45" diaginertia="0.0005 0.0005 0.0004"/>
+              <geom name="link_4_visual" type="mesh" mesh="meca_link_4" material="meca_light" mass="0"/>
+              <body name="link_5" euler="1.570796327 0 0">
+                <joint name="joint_5" type="hinge" axis="0 0 1" range="-2.007128640 2.007128640"/>
+                <inertial pos="0 0.03 0" mass="0.35" diaginertia="0.00035 0.00035 0.00025"/>
+                <geom name="link_5_visual" type="mesh" mesh="meca_link_5" material="meca_blue" mass="0"/>
+                <body name="link_6" pos="0 0.070 0" euler="1.570796327 0 3.141592654">
+                  <joint name="joint_6" type="hinge" axis="0 0 1" range="-628.318530718 628.318530718"/>
+                  <inertial pos="0 0 -0.01" mass="0.18" diaginertia="0.00012 0.00012 0.00008"/>
+                  <geom name="link_6_visual" type="mesh" mesh="meca_link_6" material="meca_light" mass="0"/>
+                  <!--
+                    The CAD disk occupies parent-link z in [-11.0014, 0.18]
+                    mm. The exposed tool-mating face is the distal z-min face;
+                    the child rotation maps its outward normal (parent -z) to
+                    FRF +z. This prevents the needle from crossing the wrist
+                    body before it reaches the eye.
+                  -->
+                  <body name="meca_frf_candidate" pos="0 0 -0.0110014" euler="3.141592654 0 0">
+                    <!-- Numerical inertia for this fixed flange reference frame. -->
+                    <inertial pos="0 0 0" mass="0.0001" diaginertia="1e-8 1e-8 1e-8"/>
+                    <geom name="flange_isolation_ring" type="cylinder" pos="0 0 -0.00024" size="0.0142 0.00024" material="flange_isolation" mass="0"/>
+                    <geom name="flange_mating_disk" type="cylinder" pos="0 0 -0.00005" size="0.0100 0.00006" material="flange_face" mass="0"/>
+                    <site name="flange_origin_candidate" pos="0 0 0" size="0.00045" rgba="0.96 0.38 0.08 0.90"/>
+                    <body name="ophthalmic_tool" pos="0 0 0">
+                      <!--
+                        The round holder plate sits on the actual flange mating
+                        face. Four dark M3 fastener heads make the mounting side
+                        visually explicit. The frozen 0.51 mm needle begins
+                        after the central adapter; only that shaft enters the
+                        1.0 mm trocar lumen.
+                      -->
+                      <geom name="instrument_mount_plate" type="cylinder" pos="0 0 0.0010" size="0.0095 0.0010" material="flange_fastener" mass="0.008"/>
+                      <geom name="instrument_mount_screw_1" type="cylinder" pos="0.0062 0 0.00204" size="0.00135 0.00005" material="meca_light" mass="0"/>
+                      <geom name="instrument_mount_screw_2" type="cylinder" pos="-0.0062 0 0.00204" size="0.00135 0.00005" material="meca_light" mass="0"/>
+                      <geom name="instrument_mount_screw_3" type="cylinder" pos="0 0.0062 0.00204" size="0.00135 0.00005" material="meca_light" mass="0"/>
+                      <geom name="instrument_mount_screw_4" type="cylinder" pos="0 -0.0062 0.00204" size="0.00135 0.00005" material="meca_light" mass="0"/>
+                      <geom name="instrument_adapter" type="cylinder" fromto="0 0 0.0021 0 0 0.012" size="0.0025" material="meca_light" mass="0.010"/>
+                      <geom name="instrument_shaft" type="capsule" fromto="0 0 0.012 0 0 0.120" size="0.000255" material="tool_mat" mass="0.015"/>
+                      <geom name="instrument_tip_marker" type="sphere" pos="0 0 0.120" size="0.00036" rgba="0.96 0.38 0.08 1" mass="0"/>
+                      <site name="tool_tip" pos="0 0 0.120" size="0.00055" rgba="0.00 0.45 0.95 1"/>
+                      <!-- Camera optical axis follows the outward +z tool axis. -->
+                      <camera name="eye_in_hand" mode="fixed" pos="0.004 0 0.108" xyaxes="0 1 0 1 0 0" fovy="41.9741"/>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!--
+      Visual anatomy from the locally audited NIH/HRA Visible Human right-eye
+      asset. This supplies real anatomical surface topology and a fundus vessel
+      texture, but remains visual-only: no tissue mechanics, calibrated optics,
+      or clinical rendering claim is made here.
+    -->
+    <!-- Pupil faces global +z: the eye rests on the operating support and is viewed from above. -->
+    <body name="eye_anatomy" pos="0.26110 0 0.041" euler="0 1.57079632679 0">
+      <body name="hra_anatomy_meshes" euler="0 -1.57079632679 0">
+      <geom name="hra_sclera_visual" type="mesh" mesh="hra_sclera_mesh" material="sclera_mat" contype="0" conaffinity="0"/>
+      <geom name="hra_conjunctiva_visual" type="mesh" mesh="hra_bulbar_conjunctiva_mesh" material="conjunctiva_mat" contype="0" conaffinity="0"/>
+      <geom name="hra_limbus_visual" type="mesh" mesh="hra_corneoscleral_junction_mesh" material="limbus_mat" contype="0" conaffinity="0"/>
+      </body>
+      <!-- Real STARE fundus appearance in the pupil observation layer. This is a visual optical proxy. -->
+      <geom name="hra_pupil_fundus_projection_visual" type="mesh" mesh="hra_pupil_fundus_projection_mesh" pos="-0.00900 0 0" material="fundus_mat" contype="0" conaffinity="0"/>
+
+      <!-- Frozen port: OD 2.0 mm, ID 1.0 mm, visible wall length 2.5 mm. After the eye rotation, its local x axis points along global -z. -->
+      <!--
+        Pars-plana-style scleral entry, deliberately 8 mm from the pupil
+        centre. The axial coordinate follows the 24 mm globe surface rather
+        than placing the trocar over the corneal/pupil observation aperture.
+      -->
+      <body name="single_trocar_visual" pos="-0.00881760 0.00800 -0.00150">
+        <geom name="trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_mat" contype="0" conaffinity="0"/>
+        <geom name="trocar_lumen" type="cylinder" pos="-0.00127 0 0" euler="0 1.57079632679 0" size="0.00050 0.00006" material="lumen_mat" contype="0" conaffinity="0"/>
+        <geom name="trocar_flange" type="cylinder" pos="-0.00138 0 0" euler="0 1.57079632679 0" size="0.00132 0.00012" material="trocar_mat" contype="0" conaffinity="0"/>
+        <site name="trocar_center" pos="0 0 0" size="0.00065" rgba="0.00 0.62 0.45 0.95"/>
+      </body>
+      <light name="intraocular_fill" pos="-0.004 0.000 0.000" dir="0.85 0 -0.05" cutoff="75" exponent="6" diffuse="0.52 0.55 0.50" specular="0.18 0.18 0.16"/>
+    </body>
+
+    <!-- External pupil view from above: no third trocar camera is introduced. -->
+    <!-- Offset top-oblique observer: it looks through the pupil while staying on the side opposite the robot base. -->
+    <camera name="pupil_external_view" mode="fixed" pos="0.300 0.090 0.120" xyaxes="-0.918 0.397 0 -0.231 -0.535 0.813" fovy="22"/>
+    <camera name="overview_close" mode="fixed" pos="0.155 -0.105 0.160" xyaxes="0.71 0.70 0 -0.30 0.31 0.90" fovy="38"/>
+    <camera name="overview_wide" mode="fixed" pos="0.025 -0.280 0.300" xyaxes="0.82 0.57 0 -0.27 0.39 0.88" fovy="46"/>
+  </worldbody>
+
+  <actuator>
+    <position name="joint_1_position" joint="joint_1" ctrlrange="-3.054326191 3.054326191"/>
+    <position name="joint_2_position" joint="joint_2" ctrlrange="-1.221730476 1.570796327"/>
+    <position name="joint_3_position" joint="joint_3" ctrlrange="-2.356194490 1.221730476"/>
+    <position name="joint_4_position" joint="joint_4" ctrlrange="-2.967059728 2.967059728"/>
+    <position name="joint_5_position" joint="joint_5" ctrlrange="-2.007128640 2.007128640"/>
+    <position name="joint_6_position" joint="joint_6" ctrlrange="-628.318530718 628.318530718"/>
+  </actuator>
+</mujoco>
