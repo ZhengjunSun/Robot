@@ -28,12 +28,31 @@
 
 专项测试 `6 passed`。
 
+### M0/M1 启动结果
+
+已开始执行正式里程碑计划，并完成第一版：
+
+- `real_3d_alignment/visual_loop.py`：统一 RGB 检测、阶段判定、动作和逐步记录入口；
+- `real_3d_alignment/coarse_vision.py`：传统红色外环检测和有界 IBVS 粗控制；
+- `real_3d_alignment/mujoco_visual_env.py`：控制侧 RGB 与评估侧真值隔离的 MuJoCo 适配器；
+- `3d_modeling/mujoco/single_arm_trocar_visual_alignment.xml`：末端相机、眼球和戳卡粗对准场景；
+- `run_mujoco_coarse_alignment.py`：视频与机器可读报告入口；
+- 四象限偏置 MuJoCo 集成测试和部分遮挡检测回归测试。
+
+当前测试为 `16 passed`。标准演示从约 `169.0 px / 8.60 mm` 初始误差，经 7 个 RGB
+控制步进入细对准区域，最终约 `3.45 px / 0.185 mm`。毫米真值只供评估记录，没有进入
+检测器或控制器。
+
+证据边界：这是 M1 轻量笛卡尔 MuJoCo 传统粗对准基线，不是完整六轴闭环，不包含
+YOLO、内外环/PnP 细对准、连续五帧最终验收或插入。
+
 ## 下一步
 
-1. 把现有传统/YOLO 检测统一为粗对准观测接口；
-2. 把现有 PnP 报告接入细对准状态机；
-3. 建立传统两级对准闭环基线；
-4. 再训练用于路径、耦合和收敛优化的有界残差 RL；
-5. 单臂全流程通过后再扩展双臂。
+1. 将 M1 扩展为随机初始位姿批量评估、搜索与重新捕获；
+2. 以同一粗观测接口接入现有 YOLO 权重并做冻结测试集对照；
+3. 把现有内外环/PnP 报告接入 M3 细对准状态机与视觉伺服；
+4. 接入传统插入控制器，建立 M4 单臂全流程；
+5. 冻结传统基线后再训练有界残差 RL；
+6. 单臂全流程通过后再扩展双臂。
 
 详细计划见 `docs/plans/VISUAL_ALIGNMENT_AND_INSERTION_PLAN_20260723.md`。

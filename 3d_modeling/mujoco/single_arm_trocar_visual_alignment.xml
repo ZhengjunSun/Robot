@@ -1,0 +1,71 @@
+<mujoco model="single_arm_trocar_visual_alignment">
+  <compiler angle="radian" coordinate="local"/>
+  <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720"/>
+  </visual>
+
+  <default>
+    <joint damping="0.20" armature="0.0002" limited="true"/>
+  </default>
+
+  <asset>
+    <material name="tool_mat" rgba="0.08 0.08 0.09 1"/>
+    <material name="trocar_mat" rgba="0.82 0.06 0.035 1"/>
+    <material name="lumen_mat" rgba="0.025 0.030 0.035 1"/>
+    <material name="eye_mat" rgba="0.94 0.88 0.78 1"/>
+    <material name="stage_mat" rgba="0.48 0.55 0.62 1"/>
+  </asset>
+
+  <worldbody>
+    <light name="key_light" pos="0.18 -0.20 0.45" dir="0.4 0.4 -1"/>
+    <light name="fill_light" pos="0.25 0.25 0.25" dir="0 -0.5 -0.5"/>
+    <geom name="ground" type="plane" pos="0 0 0" size="1 1 0.01"
+          rgba="0.86 0.88 0.90 1" contype="0" conaffinity="0"/>
+
+    <geom name="eye_surface" type="sphere" pos="0.352 0 0.16" size="0.012"
+          material="eye_mat" contype="0" conaffinity="0"/>
+    <!-- The dark front disk visually occludes the red cylinder center and
+         creates an annulus. Ground-truth sites are evaluation-only. -->
+    <geom name="trocar_outer" type="cylinder" pos="0.3393 0 0.16"
+          euler="0 1.57079632679 0" size="0.0020 0.0012"
+          material="trocar_mat" contype="1" conaffinity="1"/>
+    <geom name="trocar_lumen_visual" type="cylinder" pos="0.3380 0 0.16"
+          euler="0 1.57079632679 0" size="0.0010 0.00008"
+          material="lumen_mat" contype="0" conaffinity="0"/>
+    <site name="trocar_center_evaluation_only" pos="0.3380 0 0.16"
+          size="0.0001" rgba="0 0 0 0"/>
+
+    <body name="tool_carriage" pos="0.282 0 0.16">
+      <joint name="tool_x" type="slide" axis="1 0 0" range="-0.015 0.035"/>
+      <joint name="tool_y" type="slide" axis="0 1 0" range="-0.020 0.020"/>
+      <joint name="tool_z" type="slide" axis="0 0 1" range="-0.020 0.020"/>
+      <geom name="tool_carriage_geom" type="box" pos="-0.010 0 0.010"
+            size="0.006 0.006 0.006" material="stage_mat"
+            contype="0" conaffinity="0"/>
+      <!-- M1 virtual distal eye-in-hand baseline. The optical axis and
+           instrument axis are coaxial, and the camera looks +x. The physical
+           camera-to-TCP transform must replace this proxy before hardware use. -->
+      <camera name="eye_in_hand" mode="fixed" pos="0.025 0 0"
+              xyaxes="0 -1 0 0 0 1" fovy="41.9741"/>
+      <geom name="instrument_shaft" type="capsule"
+            fromto="0 0 0 0.050 0 0" size="0.000255"
+            material="tool_mat" contype="1" conaffinity="1"/>
+      <site name="tool_tip" pos="0.050 0 0" size="0.00035"
+            rgba="0.05 0.2 1 1"/>
+    </body>
+
+    <camera name="overview" mode="fixed" pos="0.18 -0.18 0.25"
+            xyaxes="0.72 0.69 0 -0.30 0.31 0.90" fovy="38"/>
+  </worldbody>
+
+  <actuator>
+    <position name="tool_x_position" joint="tool_x" kp="800"
+              ctrlrange="-0.015 0.035"/>
+    <position name="tool_y_position" joint="tool_y" kp="800"
+              ctrlrange="-0.020 0.020"/>
+    <position name="tool_z_position" joint="tool_z" kp="800"
+              ctrlrange="-0.020 0.020"/>
+  </actuator>
+</mujoco>

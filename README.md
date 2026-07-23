@@ -59,10 +59,22 @@ python run_real_3d_alignment.py --help
 - 分级对准状态机：已实现；
 - 连续多帧三线合一验收：已实现；
 - 现有圆环/PnP/手眼链：已保留；
-- YOLO 与粗对准统一运行接口：待接入；
+- M0 统一 RGB 视觉闭环接口：已实现第一版；
+- M1 传统圆环检测 + IBVS MuJoCo 粗对准：已实现第一版；
+- YOLO 与统一粗观测接口：待接入；
+- 内外环/PnP 细对准闭环：待接入；
 - 传统两级对准正式基线：待冻结；
 - 对准残差强化学习：待基线通过后启动；
 - 双臂协同：等待单臂全流程通过。
+
+运行当前 M1 传统视觉粗对准：
+
+```powershell
+python run_mujoco_coarse_alignment.py
+```
+
+该入口只用 eye-in-hand RGB 生成控制动作；MuJoCo 真值只记录为评估指标。当前使用轻量
+笛卡尔执行代理和红色圆环，尚不等于完整六轴、YOLO、精对准或插入闭环。
 
 详见 [项目方向](docs/project/PROJECT_DIRECTION_20260723.md)和
 [实施计划](docs/plans/VISUAL_ALIGNMENT_AND_INSERTION_PLAN_20260723.md)。
