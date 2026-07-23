@@ -10,6 +10,7 @@ from .meca500_presentation import MECA500_NIH_PRESENTATION_SCENE
 class Meca500VisualAlignmentPlant:
     """Unified six-axis Meca500 plant for control and both video views."""
 
+    HOME_Q_DEG = np.zeros(6, dtype=np.float64)
     ALIGNED_Q_DEG = np.asarray(
         [
             -79.28978634,
@@ -101,6 +102,21 @@ class Meca500VisualAlignmentPlant:
             mujoco.mjtObj.mjOBJ_SITE,
             "trocar_center",
         )
+        self.trocar_body_id = mujoco.mj_name2id(
+            self.model,
+            mujoco.mjtObj.mjOBJ_BODY,
+            "single_trocar_visual",
+        )
+        self.trocar_material_id = mujoco.mj_name2id(
+            self.model,
+            mujoco.mjtObj.mjOBJ_MATERIAL,
+            "trocar_mat",
+        )
+        self.sclera_material_id = mujoco.mj_name2id(
+            self.model,
+            mujoco.mjtObj.mjOBJ_MATERIAL,
+            "sclera_mat",
+        )
         self.instrument_geom_id = mujoco.mj_name2id(
             self.model,
             mujoco.mjtObj.mjOBJ_GEOM,
@@ -126,6 +142,9 @@ class Meca500VisualAlignmentPlant:
             self.camera_site_id,
             self.tool_tip_site_id,
             self.trocar_site_id,
+            self.trocar_body_id,
+            self.trocar_material_id,
+            self.sclera_material_id,
             self.instrument_geom_id,
             *self.wall_geom_ids,
         )
@@ -133,14 +152,110 @@ class Meca500VisualAlignmentPlant:
             raise ValueError("The unified Meca500 scene is missing required objects.")
         self.eye_scene_option = mujoco.MjvOption()
         self.eye_scene_option.geomgroup[1] = 0
+        self.eye_scene_option.geomgroup[2] = 0
         self.eye_scene_option.geomgroup[3] = 0
         self.eye_scene_option.sitegroup[1] = 0
+        self._base_trocar_body_pos = self.model.body_pos[
+            self.trocar_body_id
+        ].copy()
+        self._base_trocar_body_quat = self.model.body_quat[
+            self.trocar_body_id
+        ].copy()
+        self._base_camera_fovy = float(self.model.cam_fovy[self.camera_id])
+        self._base_trocar_rgba = self.model.mat_rgba[
+            self.trocar_material_id
+        ].copy()
+        self._base_sclera_rgba = self.model.mat_rgba[
+            self.sclera_material_id
+        ].copy()
         self._last_contact_metrics = {
             "wall_contact_detected": False,
             "wall_contact_count": 0,
             "maximum_normal_force_n": 0.0,
         }
         self.reset()
+
+    def reset_domain(self) -> None:
+        self.model.body_pos[self.trocar_body_id] = self._base_trocar_body_pos
+        self.model.body_quat[self.trocar_body_id] = (
+            self._base_trocar_body_quat
+        )
+        self.model.cam_fovy[self.camera_id] = self._base_camera_fovy
+        self.model.mat_rgba[self.trocar_material_id] = (
+            self._base_trocar_rgba
+        )
+        self.model.mat_rgba[self.sclera_material_id] = self._base_sclera_rgba
+        self.mujoco.mj_forward(self.model, self.data)
+
+    def set_domain_randomization(
+        self,
+        *,
+        trocar_translation_mm: tuple[float, float, float] = (0.0, 0.0, 0.0),
+        trocar_rotation_deg_xyz: tuple[float, float, float] = (
+            0.0,
+            0.0,
+            0.0,
+        ),
+        camera_fovy_scale: float = 1.0,
+        trocar_rgb_scale: tuple[float, float, float] = (1.0, 1.0, 1.0),
+        sclera_rgb_scale: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    ) -> None:
+        """Apply reproducible model-domain changes for evaluation only."""
+
+        self.reset_domain()
+        self.model.body_pos[self.trocar_body_id] = (
+            self._base_trocar_body_pos
+            + np.asarray(trocar_translation_mm, dtype=np.float64) * 1e-3
+        )
+        delta = np.asarray([1.0, 0.0, 0.0, 0.0], dtype=np.float64)
+        for axis, angle_deg in zip(
+            np.eye(3, dtype=np.float64),
+            np.asarray(
+                trocar_rotation_deg_xyz,
+                dtype=np.float64,
+            ),
+        ):
+            if abs(float(angle_deg)) <= 1e-12:
+                continue
+            axis_quat = np.zeros(4, dtype=np.float64)
+            self.mujoco.mju_axisAngle2Quat(
+                axis_quat,
+                axis,
+                np.deg2rad(float(angle_deg)),
+            )
+            composed = np.zeros(4, dtype=np.float64)
+            self.mujoco.mju_mulQuat(composed, axis_quat, delta)
+            delta = composed
+        randomized_quat = np.zeros(4, dtype=np.float64)
+        self.mujoco.mju_mulQuat(
+            randomized_quat,
+            delta,
+            self._base_trocar_body_quat,
+        )
+        self.model.body_quat[self.trocar_body_id] = randomized_quat
+        self.model.cam_fovy[self.camera_id] = (
+            self._base_camera_fovy * float(camera_fovy_scale)
+        )
+        for material_id, base, scale in (
+            (
+                self.trocar_material_id,
+                self._base_trocar_rgba,
+                trocar_rgb_scale,
+            ),
+            (
+                self.sclera_material_id,
+                self._base_sclera_rgba,
+                sclera_rgb_scale,
+            ),
+        ):
+            rgba = base.copy()
+            rgba[:3] = np.clip(
+                rgba[:3] * np.asarray(scale, dtype=np.float64),
+                0.0,
+                1.0,
+            )
+            self.model.mat_rgba[material_id] = rgba
+        self.mujoco.mj_forward(self.model, self.data)
 
     def reset(self, q_deg: np.ndarray | None = None) -> None:
         self.mujoco.mj_resetData(self.model, self.data)
@@ -186,6 +301,13 @@ class Meca500VisualAlignmentPlant:
         self.renderer.update_scene(
             self.data,
             camera="full_arm_presentation",
+        )
+        return self.renderer.render().copy()
+
+    def capture_trocar_closeup_rgb(self) -> np.ndarray:
+        self.renderer.update_scene(
+            self.data,
+            camera="trocar_closeup",
         )
         return self.renderer.render().copy()
 

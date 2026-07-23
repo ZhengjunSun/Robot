@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from real_3d_alignment.fine_vision import FineRingEstimate
+from real_3d_alignment.meca500_visual_env import Meca500VisualAlignmentPlant
 from real_3d_alignment.scene_contract import (
     CAMERA_CENTER_BGR,
     INNER_CENTER_BGR,
@@ -46,6 +47,29 @@ def test_trocar_tilt_is_frozen_in_both_scenes() -> None:
     full_arm_euler = _float_vector(full_arm_trocar, "euler")
     assert math.degrees(lightweight_euler[0]) == pytest.approx(TROCAR_TILT_DEG)
     assert math.degrees(full_arm_euler[2]) == pytest.approx(TROCAR_TILT_DEG)
+
+
+def test_eye_is_upright_and_side_view_camera_is_frozen() -> None:
+    root = ET.parse(FULL_ARM_SCENE).getroot()
+    eye = root.find(".//body[@name='eye_anatomy']")
+    anatomy = root.find(".//body[@name='hra_anatomy_meshes']")
+    closeup = root.find(".//camera[@name='trocar_closeup']")
+
+    assert eye is not None
+    assert anatomy is not None
+    assert closeup is not None
+    # The imported NIH mesh correction is cancelled by its parent transform,
+    # leaving the anatomical eye axis upright in the global scene.
+    net_euler_y = _float_vector(eye, "euler")[1] + _float_vector(
+        anatomy,
+        "euler",
+    )[1]
+    assert net_euler_y == pytest.approx(0.0, abs=1e-10)
+    assert closeup.attrib["target"] == "single_trocar_visual"
+
+
+def test_formal_demo_starts_from_joint_zero_reference() -> None:
+    assert Meca500VisualAlignmentPlant.HOME_Q_DEG.tolist() == [0.0] * 6
 
 
 def test_presentation_needle_is_exactly_one_third_reference_length() -> None:
@@ -119,4 +143,3 @@ def test_eye_in_hand_annotation_draws_all_three_centers() -> None:
         "OUTER CENTER",
         "INNER CENTER",
     )
-

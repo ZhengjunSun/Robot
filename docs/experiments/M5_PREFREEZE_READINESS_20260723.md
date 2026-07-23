@@ -8,14 +8,14 @@
 本结果不是正式 M5 冻结结论，原因是：
 
 - 完整六轴 Meca500 闭环控制尚未接管当前笛卡尔 plant；
-- 20° 斜置戳卡与摄像头轴当前从平行状态开始，主动旋转纠偏尚未完成；
+- 本条已被后续 M4 六轴闭环取代：当前使用 35° 斜置戳卡，主动旋转纠偏已完成；
 - 还没有独立真实相机图像验证；
 - 材质、遮挡、标定和可变戳卡姿态随机化尚未覆盖。
 
 ## 已固化场景
 
 - NIH/HRA Visible Human female right eye v1.2；
-- 戳卡倾角 `20°`；
+- 眼球保持竖直，戳卡倾角 `35°`；
 - 演示针长由 `108 mm` 缩短至 `36 mm`；
 - 正式视频包含完整 Meca500 和摄像头/内环/外环三中心；
 - 控制器不读取 MuJoCo 目标真值。
@@ -92,4 +92,3 @@ python run_m5_prefreeze_batch.py --episodes 20
 python run_m5_prefreeze_batch.py --episodes 20 --gain-min 1 --gain-max 1 --noise-std-max 0 --output-dir output/m5_prefreeze_clean
 python -m pytest -q
 ```
-

@@ -78,7 +78,7 @@ def test_fine_servo_bounds_lateral_and_standoff_commands() -> None:
     assert abs(command.camera_xyz_mm[2]) <= 0.75 + 1e-9
 
 
-def test_nih_m3_loop_reaches_five_frame_handoff() -> None:
+def test_translation_only_nih_loop_rejects_35_degree_pose_error() -> None:
     pytest.importorskip("mujoco")
     from real_3d_alignment.mujoco_visual_env import (
         MujocoCoarseAlignmentPlant,
@@ -103,7 +103,10 @@ def test_nih_m3_loop_reaches_five_frame_handoff() -> None:
     finally:
         plant.close()
 
-    assert result.stop_reason == "insertion_handoff_ready"
-    assert result.final_decision.phase is AlignmentPhase.ALIGNED
-    assert result.final_decision.stable_frames == 5
-    assert result.final_decision.insertion_handoff_ready
+    # The legacy lightweight plant has only xyz slides.  At the frozen 35°
+    # trocar tilt it may center the ring, but it must not falsely claim the
+    # six-axis pose has converged.  The full Meca500 runner owns that handoff.
+    assert result.stop_reason == "maximum_steps_reached"
+    assert result.final_decision.phase is AlignmentPhase.FINE
+    assert result.final_decision.stable_frames == 0
+    assert not result.final_decision.insertion_handoff_ready

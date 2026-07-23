@@ -10,7 +10,8 @@
   <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
 
   <visual>
-    <global offwidth="2560" offheight="1080"/>
+    <!-- Each renderer pane is 1280x960; the video concatenates two panes later. -->
+    <global offwidth="1280" offheight="960"/>
     <quality shadowsize="4096"/>
     <map znear="0.002" zfar="2.0"/>
     <headlight ambient="0.38 0.38 0.38" diffuse="0.45 0.45 0.45" specular="0.14 0.14 0.14"/>
@@ -183,20 +184,27 @@
         than placing the trocar over the corneal/pupil observation aperture.
       -->
       <body name="single_trocar_visual" pos="-0.00981760 0.00800 -0.00150"
-            euler="0 0 0.3490658504">
-        <geom name="trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_body_mat" contype="0" conaffinity="0"/>
-        <geom name="trocar_lumen" type="cylinder" pos="-0.00152 0 0" euler="0 1.57079632679 0" size="0.00050 0.00006" material="lumen_mat" contype="0" conaffinity="0"/>
+            euler="0 0 0.6108652382">
+        <geom name="trocar_outer" type="cylinder" pos="-0.00075 0 0"
+              euler="0 1.57079632679 0" size="0.0010 0.00225"
+              material="trocar_body_mat" contype="0" conaffinity="0"
+              group="2"/>
+        <!-- Dark aperture overlay on the entrance face. -->
+        <geom name="trocar_lumen" type="cylinder" pos="-0.00309 0 0"
+              euler="0 1.57079632679 0" size="0.00050 0.00006"
+              material="lumen_mat" contype="0" conaffinity="0"/>
         <!--
           Thin cyan face target used for ellipse pose estimation. A thick
           cylinder silhouette hides several degrees of tilt because its side
           wall expands the projected minor axis; the structural trocar body
           remains full-depth in trocar_outer and in the contact proxies.
         -->
-        <geom name="trocar_flange" type="cylinder" pos="-0.00148 0 0"
+        <geom name="trocar_flange" type="cylinder" pos="-0.00305 0 0"
               euler="0 1.57079632679 0" size="0.00132 0.00002"
               material="trocar_mat" contype="0" conaffinity="0"/>
-        <site name="trocar_center" pos="0 0 0" euler="0 1.57079632679 0"
-              size="0.00065" rgba="0.00 0.62 0.45 0.95"/>
+        <site name="trocar_center" pos="-0.00305 0 0"
+              euler="0 1.57079632679 0"
+              size="0.00065" rgba="0.00 0.62 0.45 0.95" group="1"/>
         <!-- Hidden square-wall contact proxy aligned with the tilted local x axis. -->
         <geom name="trocar_wall_pos_y" type="box" pos="0 0.00075 0"
               size="0.00125 0.00025 0.00050" rgba="0 0 0 0"
@@ -220,6 +228,8 @@
     <camera name="overview_close" mode="fixed" pos="0.155 -0.105 0.160" xyaxes="0.71 0.70 0 -0.30 0.31 0.90" fovy="38"/>
     <camera name="overview_wide" mode="fixed" pos="0.025 -0.280 0.300" xyaxes="0.82 0.57 0 -0.27 0.39 0.88" fovy="46"/>
     <camera name="full_arm_presentation" mode="targetbody" target="presentation_focus" pos="-0.02 -0.55 0.40" fovy="45"/>
+    <camera name="trocar_closeup" mode="targetbody"
+            target="single_trocar_visual" pos="0.205 0.008 0.072" fovy="14"/>
   </worldbody>
 
   <actuator>
