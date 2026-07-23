@@ -29,6 +29,7 @@ models/
 *.pdf
 *.log
 *.console.txt
+MUJOCO_LOG.TXT
 
 *.aux
 *.bbl

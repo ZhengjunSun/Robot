@@ -61,15 +61,49 @@ class MujocoCoarseAlignmentPlant:
         )
         if any(geom_id < 0 for geom_id in self.trocar_geom_ids):
             raise ValueError("Configured trocar segmentation geoms are missing.")
+        self.insertion_joint_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_JOINT, "instrument_insert"
+        )
+        self.insertion_actuator_id = mujoco.mj_name2id(
+            self.model,
+            mujoco.mjtObj.mjOBJ_ACTUATOR,
+            "instrument_insert_position",
+        )
+        self.instrument_geom_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_GEOM, "instrument_shaft"
+        )
+        self.wall_geom_ids = tuple(
+            mujoco.mj_name2id(
+                self.model,
+                mujoco.mjtObj.mjOBJ_GEOM,
+                name,
+            )
+            for name in (
+                "trocar_wall_pos_y",
+                "trocar_wall_neg_y",
+                "trocar_wall_pos_x",
+                "trocar_wall_neg_x",
+            )
+        )
         self.eye_scene_option = mujoco.MjvOption()
         self.eye_scene_option.geomgroup[1] = 0
         self.eye_scene_option.sitegroup[1] = 0
+        self._last_insertion_contact_metrics = {
+            "wall_contact_detected": False,
+            "wall_contact_count": 0,
+            "maximum_normal_force_n": 0.0,
+        }
         self.reset()
 
     def reset(
         self, initial_camera_xy_mm: tuple[float, float] | None = None
     ) -> None:
         self.mujoco.mj_resetData(self.model, self.data)
+        self._last_insertion_contact_metrics = {
+            "wall_contact_detected": False,
+            "wall_contact_count": 0,
+            "maximum_normal_force_n": 0.0,
+        }
         camera_xy = initial_camera_xy_mm or self.initial_camera_xy_mm
         self.mujoco.mj_forward(self.model, self.data)
         camera_rotation = np.asarray(
@@ -85,13 +119,94 @@ class MujocoCoarseAlignmentPlant:
         self.mujoco.mj_forward(self.model, self.data)
         self._settle()
 
-    def _settle(self) -> None:
+    def apply_insertion_step(self, step_mm: float) -> None:
+        if (
+            self.insertion_joint_id < 0
+            or self.insertion_actuator_id < 0
+        ):
+            raise RuntimeError("This scene has no insertion actuator.")
+        qpos_address = int(
+            self.model.jnt_qposadr[self.insertion_joint_id]
+        )
+        joint_range = self.model.jnt_range[self.insertion_joint_id]
+        target = np.clip(
+            self.data.qpos[qpos_address] + max(0.0, float(step_mm)) * 1e-3,
+            joint_range[0],
+            joint_range[1],
+        )
+        self.data.ctrl[self.insertion_actuator_id] = target
+        self._settle(track_wall_contacts=True)
+
+    def insertion_extension_mm(self) -> float:
+        if self.insertion_joint_id < 0:
+            return 0.0
+        address = int(self.model.jnt_qposadr[self.insertion_joint_id])
+        return float(self.data.qpos[address] * 1000.0)
+
+    def wall_contact_metrics(self) -> dict[str, float | int | bool]:
+        """Return current and last insertion-step MuJoCo wall contacts."""
+
+        current = self._current_wall_contact_metrics()
+        previous = self._last_insertion_contact_metrics
+        return {
+            "wall_contact_detected": bool(
+                current["wall_contact_detected"]
+                or previous["wall_contact_detected"]
+            ),
+            "wall_contact_count": int(current["wall_contact_count"])
+            + int(previous["wall_contact_count"]),
+            "maximum_normal_force_n": max(
+                float(current["maximum_normal_force_n"]),
+                float(previous["maximum_normal_force_n"]),
+            ),
+        }
+
+    def _current_wall_contact_metrics(self) -> dict[str, float | int | bool]:
+        maximum_force = 0.0
+        contact_count = 0
+        if self.instrument_geom_id >= 0:
+            for index in range(int(self.data.ncon)):
+                contact = self.data.contact[index]
+                pair = {int(contact.geom1), int(contact.geom2)}
+                if (
+                    self.instrument_geom_id not in pair
+                    or not any(wall in pair for wall in self.wall_geom_ids)
+                ):
+                    continue
+                force = np.zeros(6, dtype=np.float64)
+                self.mujoco.mj_contactForce(
+                    self.model, self.data, index, force
+                )
+                maximum_force = max(maximum_force, float(abs(force[0])))
+                contact_count += 1
+        return {
+            "wall_contact_detected": contact_count > 0,
+            "wall_contact_count": contact_count,
+            "maximum_normal_force_n": maximum_force,
+        }
+
+    def _settle(self, *, track_wall_contacts: bool = False) -> None:
+        peak_force = 0.0
+        contact_samples = 0
         for _ in range(max(1, self.settle_steps)):
             self.mujoco.mj_step(self.model, self.data)
+            if track_wall_contacts:
+                current = self._current_wall_contact_metrics()
+                peak_force = max(
+                    peak_force,
+                    float(current["maximum_normal_force_n"]),
+                )
+                contact_samples += int(current["wall_contact_count"])
         # mj_step integrates qpos at the end of its pipeline. Refresh derived
         # camera/site poses so the rendered frame and evaluation metrics refer
         # to the same state as data.qpos.
         self.mujoco.mj_forward(self.model, self.data)
+        if track_wall_contacts:
+            self._last_insertion_contact_metrics = {
+                "wall_contact_detected": contact_samples > 0,
+                "wall_contact_count": contact_samples,
+                "maximum_normal_force_n": peak_force,
+            }
 
     def capture_rgb(self) -> np.ndarray:
         self.renderer.update_scene(

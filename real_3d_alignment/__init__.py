@@ -17,6 +17,11 @@ from .fine_vision import (
     FineServoConfig,
     NihFineRingDetector,
 )
+from .insertion_handoff import (
+    InsertionStepDecision,
+    TraditionalInsertionConfig,
+    TraditionalInsertionHandoffController,
+)
 from .staged_alignment import (
     AlignmentDecision,
     AlignmentPhase,
@@ -43,6 +48,9 @@ __all__ = [
     "FineServoCommand",
     "FineServoConfig",
     "NihFineRingDetector",
+    "InsertionStepDecision",
+    "TraditionalInsertionConfig",
+    "TraditionalInsertionHandoffController",
     "RingDetection",
     "StagedVisualAlignmentLoop",
     "StagedAlignmentGate",
