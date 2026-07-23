@@ -23,8 +23,8 @@
 - M0：统一 RGB 感知—控制—评价入口已完成第一版；
 - M1：传统颜色/轮廓检测 + IBVS 粗对准已完成；
 - M2：YOLO 共用粗观测接口、合成数据生成、训练和在线闭环已完成第一版；
-- M3：NIH 场景内外环/PnP 精对准闭环待接入；
-- M4：连续稳定验收和既有插入控制器交接待完成。
+- M3：NIH 场景内外环椭圆几何、2.5D 平移精对准和连续 5 帧验收已完成第一版；
+- M4：既有插入控制器交接、插入中视觉监测和接触指标待完成。
 
 控制动作只读取 eye-in-hand RGB 检测结果。MuJoCo 目标真值只用于评价，特权几何分割
 只用于生成训练标签，不进入在线控制器。
@@ -56,6 +56,13 @@ python run_mujoco_coarse_alignment.py --detector traditional
 python run_mujoco_coarse_batch.py --episodes 100 --detector traditional
 ```
 
+运行 M3 粗—细对准和随机测试：
+
+```powershell
+python run_mujoco_fine_alignment.py
+python run_mujoco_fine_batch.py --episodes 50
+```
+
 生成数据、训练 YOLO 并运行 M2 闭环：
 
 ```powershell
@@ -73,7 +80,8 @@ python run_mujoco_coarse_alignment.py `
 详见
 [实施计划](docs/plans/VISUAL_ALIGNMENT_AND_INSERTION_PLAN_20260723.md)、
 [当前状态](docs/handoffs/CURRENT_PROJECT_STATUS_20260723.md)和
-[M1/M2 NIH 基线记录](docs/experiments/M1_M2_NIH_HRA_BASELINE_20260723.md)。
+[M1/M2 NIH 基线记录](docs/experiments/M1_M2_NIH_HRA_BASELINE_20260723.md)、
+[M3 NIH 精对准记录](docs/experiments/M3_NIH_HRA_FINE_ALIGNMENT_20260723.md)。
 
 ## 安全边界
 

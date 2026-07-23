@@ -63,6 +63,7 @@ class MujocoCoarseAlignmentPlant:
             raise ValueError("Configured trocar segmentation geoms are missing.")
         self.eye_scene_option = mujoco.MjvOption()
         self.eye_scene_option.geomgroup[1] = 0
+        self.eye_scene_option.sitegroup[1] = 0
         self.reset()
 
     def reset(
@@ -121,13 +122,19 @@ class MujocoCoarseAlignmentPlant:
         return np.isin(object_ids, self.trocar_geom_ids)
 
     def apply_camera_xy_step(self, command_mm: tuple[float, float]) -> None:
-        camera_x_mm, camera_y_mm = command_mm
+        self.apply_camera_xyz_step((command_mm[0], command_mm[1], 0.0))
+
+    def apply_camera_xyz_step(
+        self, command_mm: tuple[float, float, float]
+    ) -> None:
+        camera_x_mm, camera_y_mm, camera_z_mm = command_mm
         camera_rotation = np.asarray(
             self.data.cam_xmat[self.camera_id], dtype=np.float64
         ).reshape(3, 3)
         world_step_mm = (
             camera_rotation[:, 0] * camera_x_mm
             + camera_rotation[:, 1] * camera_y_mm
+            + camera_rotation[:, 2] * camera_z_mm
         )
         for index in range(3):
             self.data.ctrl[index] = np.clip(

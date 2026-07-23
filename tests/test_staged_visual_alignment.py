@@ -114,6 +114,22 @@ def test_failed_frame_resets_stability_counter() -> None:
     assert failed.phase is AlignmentPhase.FINE
 
 
+def test_missing_target_revokes_existing_handoff_authorization() -> None:
+    gate = StagedAlignmentGate(
+        AlignmentThresholds(required_stable_frames=1)
+    )
+    aligned = gate.update(
+        coarse=coarse((320.0, 240.0)), fine=aligned_fine()
+    )
+
+    revoked = gate.update(coarse=None, fine=None)
+
+    assert aligned.insertion_handoff_ready
+    assert not revoked.insertion_handoff_ready
+    assert revoked.phase is AlignmentPhase.SEARCH
+    assert revoked.stable_frames == 0
+
+
 def test_pose_report_adapter_uses_inner_outer_and_axis_geometry() -> None:
     report = {
         "outer_ellipse": {"center": [320.5, 240.0]},

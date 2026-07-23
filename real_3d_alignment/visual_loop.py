@@ -11,6 +11,7 @@ from .coarse_vision import (
     RingDetection,
     TraditionalRingDetector,
 )
+from .fine_vision import FineImageBasedVisualServo, FineServoCommand
 from .staged_alignment import (
     AlignmentDecision,
     AlignmentPhase,
@@ -26,6 +27,10 @@ class EyeInHandPlant(Protocol):
 
     def apply_camera_xy_step(self, command_mm: tuple[float, float]) -> None: ...
 
+    def apply_camera_xyz_step(
+        self, command_mm: tuple[float, float, float]
+    ) -> None: ...
+
 
 class FineObservationProvider(Protocol):
     def estimate(self, image_rgb: np.ndarray) -> FineObservation | None: ...
@@ -40,6 +45,7 @@ class VisualLoopRecord:
     confidence: float | None
     radius_px: float | None
     command_camera_xy_mm: tuple[float, float]
+    fine_command_camera_xyz_mm: tuple[float, float, float]
     estimated_depth_mm: float | None
     stable_frames: int
     insertion_handoff_ready: bool
@@ -75,6 +81,7 @@ class StagedVisualAlignmentLoop:
         coarse_servo: CoarseImageBasedVisualServo,
         gate: StagedAlignmentGate,
         fine_provider: FineObservationProvider | None = None,
+        fine_servo: FineImageBasedVisualServo | None = None,
         step_observer: Callable[
             [
                 np.ndarray,
@@ -92,6 +99,7 @@ class StagedVisualAlignmentLoop:
         self.coarse_servo = coarse_servo
         self.gate = gate
         self.fine_provider = fine_provider
+        self.fine_servo = fine_servo
         self.step_observer = step_observer
 
     def run(self, *, maximum_steps: int = 100) -> VisualLoopResult:
@@ -114,14 +122,24 @@ class StagedVisualAlignmentLoop:
                 fine=fine,
             )
             command: CoarseServoCommand | None = None
+            fine_command: FineServoCommand | None = None
             if (
                 detection is not None
                 and final_decision.phase is AlignmentPhase.COARSE
                 and not final_decision.hold_position
             ):
                 command = self.coarse_servo.command(detection)
+            elif (
+                fine is not None
+                and self.fine_servo is not None
+                and final_decision.phase is AlignmentPhase.FINE
+                and not final_decision.hold_position
+            ):
+                fine_command = self.fine_servo.command(fine)
 
-            record = self._record(step, detection, command, final_decision)
+            record = self._record(
+                step, detection, command, fine_command, final_decision
+            )
             records.append(record)
             if self.step_observer is not None:
                 self.step_observer(
@@ -135,6 +153,10 @@ class StagedVisualAlignmentLoop:
                 break
             if command is not None:
                 self.plant.apply_camera_xy_step(command.camera_xy_mm)
+            elif fine_command is not None:
+                self.plant.apply_camera_xyz_step(
+                    fine_command.camera_xyz_mm
+                )
 
         if final_decision is None:  # pragma: no cover - guarded by maximum_steps
             raise RuntimeError("Visual loop produced no decision.")
@@ -149,6 +171,7 @@ class StagedVisualAlignmentLoop:
         step: int,
         detection: RingDetection | None,
         command: CoarseServoCommand | None,
+        fine_command: FineServoCommand | None,
         decision: AlignmentDecision,
     ) -> VisualLoopRecord:
         return VisualLoopRecord(
@@ -166,6 +189,11 @@ class StagedVisualAlignmentLoop:
             radius_px=None if detection is None else detection.radius_px,
             command_camera_xy_mm=(
                 (0.0, 0.0) if command is None else command.camera_xy_mm
+            ),
+            fine_command_camera_xyz_mm=(
+                (0.0, 0.0, 0.0)
+                if fine_command is None
+                else fine_command.camera_xyz_mm
             ),
             estimated_depth_mm=(
                 None if command is None else command.estimated_depth_mm

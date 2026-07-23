@@ -11,7 +11,7 @@
   <visual>
     <global offwidth="1280" offheight="720"/>
     <quality shadowsize="2048"/>
-    <map znear="0.002" zfar="1.0"/>
+    <map znear="0.002" zfar="5.0"/>
     <headlight ambient="0.42 0.42 0.42" diffuse="0.48 0.48 0.48"/>
   </visual>
 
@@ -88,7 +88,7 @@
             fromto="0 0 0 0 0 -0.050" size="0.000255"
             material="tool_mat" contype="1" conaffinity="1" group="1"/>
       <site name="tool_tip" pos="0 0 -0.050" size="0.00035"
-            rgba="0.96 0.38 0.08 1"/>
+            rgba="0.96 0.38 0.08 1" group="1"/>
       <!-- Virtual coaxial eye-in-hand baseline; physical extrinsics remain pending.
            The M1 RGB renderer hides visual group 1 (the shaft) to isolate
            perception. Collision geometry and overview rendering retain it. -->
@@ -96,8 +96,8 @@
               xyaxes="1 0 0 0 1 0" fovy="41.9741"/>
     </body>
 
-    <camera name="overview" mode="fixed" pos="0.10 -0.13 0.14"
-            xyaxes="0.79 0.61 0 -0.35 0.45 0.82" fovy="38"/>
+    <camera name="overview" mode="targetbody" target="nih_hra_eye"
+            pos="0.10 -0.13 0.14" fovy="38"/>
   </worldbody>
 
   <actuator>

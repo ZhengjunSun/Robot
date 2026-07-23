@@ -9,6 +9,14 @@ from .coarse_vision import (
     TraditionalRingDetectorConfig,
 )
 from .pipeline import run_pipeline
+from .fine_vision import (
+    FineImageBasedVisualServo,
+    FineRingDetectorConfig,
+    FineRingEstimate,
+    FineServoCommand,
+    FineServoConfig,
+    NihFineRingDetector,
+)
 from .staged_alignment import (
     AlignmentDecision,
     AlignmentPhase,
@@ -29,6 +37,12 @@ __all__ = [
     "CoarseServoCommand",
     "CoarseServoConfig",
     "FineObservation",
+    "FineImageBasedVisualServo",
+    "FineRingDetectorConfig",
+    "FineRingEstimate",
+    "FineServoCommand",
+    "FineServoConfig",
+    "NihFineRingDetector",
     "RingDetection",
     "StagedVisualAlignmentLoop",
     "StagedAlignmentGate",
