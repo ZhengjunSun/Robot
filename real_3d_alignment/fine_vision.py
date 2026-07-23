@@ -17,6 +17,7 @@ class FineRingDetectorConfig:
     hue_ranges: tuple[tuple[int, int], ...] = ((82, 112),)
     saturation_minimum: int = 55
     value_minimum: int = 35
+    gaussian_blur_kernel_px: int = 3
     inner_value_maximum: int = 80
     minimum_outer_area_px2: float = 180.0
     minimum_inner_area_px2: float = 20.0
@@ -109,7 +110,15 @@ class NihFineRingDetector:
         if image.ndim != 3 or image.shape[2] != 3:
             raise ValueError("NihFineRingDetector expects an HxWx3 RGB image.")
         cfg = self.config
-        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        blur_size = max(1, int(cfg.gaussian_blur_kernel_px))
+        if blur_size % 2 == 0:
+            blur_size += 1
+        filtered = (
+            image
+            if blur_size == 1
+            else cv2.GaussianBlur(image, (blur_size, blur_size), 0)
+        )
+        hsv = cv2.cvtColor(filtered, cv2.COLOR_RGB2HSV)
         outer_mask = np.zeros(image.shape[:2], dtype=np.uint8)
         for lower_hue, upper_hue in cfg.hue_ranges:
             outer_mask = cv2.bitwise_or(
@@ -159,7 +168,7 @@ class NihFineRingDetector:
             outer_contour
         )
 
-        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(filtered, cv2.COLOR_RGB2GRAY)
         inner_mask = cv2.inRange(gray, 0, cfg.inner_value_maximum)
         roi = np.zeros_like(inner_mask)
         cv2.ellipse(

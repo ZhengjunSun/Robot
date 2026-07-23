@@ -20,11 +20,14 @@
 
 - 眼球：NIH 3D / HRA Visible Human female right eye v1.2；
 - 戳卡冻结合同：外径 2.0 mm、内径 1.0 mm、壁长 2.5 mm、法兰外径 2.64 mm；
+- 戳卡采用 20° 斜入轴线，不再使用竖直向上的简化场景；
+- 演示针具可见长度为 36 mm，是原 108 mm 模型的三分之一；
 - M0：统一 RGB 感知—控制—评价入口已完成第一版；
 - M1：传统颜色/轮廓检测 + IBVS 粗对准已完成；
 - M2：YOLO 共用粗观测接口、合成数据生成、训练和在线闭环已完成第一版；
 - M3：NIH 场景内外环椭圆几何、2.5D 平移精对准和连续 5 帧验收已完成第一版；
 - M4：授权交接、独立进给、插入中视觉撤权、解析间隙和 MuJoCo 接触指标已完成第一版。
+- M5：已建立冻结前批量评测入口；正式 500 回合冻结结论尚未完成。
 
 控制动作只读取 eye-in-hand RGB 检测结果。MuJoCo 目标真值只用于评价，特权几何分割
 只用于生成训练标签，不进入在线控制器。
@@ -62,6 +65,7 @@ python run_mujoco_coarse_batch.py --episodes 100 --detector traditional
 python run_mujoco_fine_alignment.py
 python run_mujoco_fine_batch.py --episodes 50
 python run_mujoco_full_flow.py
+python run_m5_prefreeze_batch.py --episodes 20
 ```
 
 生成数据、训练 YOLO 并运行 M2 闭环：
@@ -83,7 +87,9 @@ python run_mujoco_coarse_alignment.py `
 [当前状态](docs/handoffs/CURRENT_PROJECT_STATUS_20260723.md)和
 [M1/M2 NIH 基线记录](docs/experiments/M1_M2_NIH_HRA_BASELINE_20260723.md)、
 [M3 NIH 精对准记录](docs/experiments/M3_NIH_HRA_FINE_ALIGNMENT_20260723.md)和
-[M4 单臂完整流程记录](docs/experiments/M4_NIH_HRA_FULL_FLOW_20260723.md)。
+[M4 单臂完整流程记录](docs/experiments/M4_NIH_HRA_FULL_FLOW_20260723.md)、
+[场景与视频冻结合同](docs/project/SCENE_AND_VIDEO_CONTRACT_20260723.md)和
+[M5 冻结前就绪评测](docs/experiments/M5_PREFREEZE_READINESS_20260723.md)。
 
 ## 安全边界
 

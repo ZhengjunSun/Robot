@@ -1,0 +1,21 @@
+from __future__ import annotations
+
+
+# Frozen scene/presentation requirements confirmed on 2026-07-23.
+TROCAR_TILT_DEG = 20.0
+REFERENCE_NEEDLE_VISIBLE_LENGTH_MM = 108.0
+NEEDLE_VISIBLE_LENGTH_MM = REFERENCE_NEEDLE_VISIBLE_LENGTH_MM / 3.0
+
+VIDEO_REQUIRES_COMPLETE_MECA500 = True
+VIDEO_REQUIRES_CENTER_OVERLAY = True
+VIDEO_CENTER_LABELS = (
+    "CAMERA CENTER",
+    "OUTER CENTER",
+    "INNER CENTER",
+)
+
+# BGR colors used by OpenCV video annotation.
+CAMERA_CENTER_BGR = (255, 255, 0)
+OUTER_CENTER_BGR = (0, 255, 0)
+INNER_CENTER_BGR = (0, 165, 255)
+

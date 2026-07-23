@@ -16,6 +16,13 @@ from real_3d_alignment.meca500_presentation import (
 )
 from real_3d_alignment.mujoco_visual_env import MujocoCoarseAlignmentPlant
 from real_3d_alignment.fine_vision import FineRingEstimate
+from real_3d_alignment.scene_contract import (
+    CAMERA_CENTER_BGR,
+    INNER_CENTER_BGR,
+    NEEDLE_VISIBLE_LENGTH_MM,
+    OUTER_CENTER_BGR,
+    TROCAR_TILT_DEG,
+)
 from real_3d_alignment.nih_baseline import (
     NIH_HRA_EYE_SOURCE,
     NIH_HRA_SCENE,
@@ -50,9 +57,9 @@ def annotate(
     height, width = image.shape[:2]
     camera_center = (width // 2, height // 2)
     if draw_alignment_centers:
-        camera_color = (255, 255, 0)
-        outer_color = (0, 255, 0)
-        inner_color = (0, 165, 255)
+        camera_color = CAMERA_CENTER_BGR
+        outer_color = OUTER_CENTER_BGR
+        inner_color = INNER_CENTER_BGR
         cv2.drawMarker(
             image,
             camera_center,
@@ -276,7 +283,10 @@ def main() -> None:
                 alignment_progress=alignment_progress,
                 insertion_extension_mm=extension,
             ),
-            title="FULL MECA500 | TROCAR 20deg | NEEDLE 36mm",
+            title=(
+                f"FULL MECA500 | TROCAR {TROCAR_TILT_DEG:.0f}deg"
+                f" | NEEDLE {NEEDLE_VISIBLE_LENGTH_MM:.0f}mm"
+            ),
             phase=phase,
             step=step,
             metrics=metrics,
@@ -423,8 +433,8 @@ def main() -> None:
             "M4 NIH/HRA RGB-driven alignment and deterministic insertion baseline"
         ),
         "anatomy": NIH_HRA_EYE_SOURCE,
-        "trocar_tilt_deg": 20.0,
-        "presentation_needle_visible_length_mm": 36.0,
+        "trocar_tilt_deg": TROCAR_TILT_DEG,
+        "presentation_needle_visible_length_mm": NEEDLE_VISIBLE_LENGTH_MM,
         "controller_inputs": [
             "eye_in_hand_rgb",
             "inner_outer_ellipse_geometry",

@@ -24,6 +24,7 @@ class TraditionalRingDetectorConfig:
     minimum_circularity: float = 0.18
     saturation_minimum: int = 70
     value_minimum: int = 45
+    gaussian_blur_kernel_px: int = 3
     morphology_kernel_px: int = 3
     hue_ranges: tuple[tuple[int, int], ...] = ((0, 18), (165, 179))
 
@@ -50,8 +51,16 @@ class TraditionalRingDetector:
         if image.ndim != 3 or image.shape[2] != 3:
             raise ValueError("TraditionalRingDetector expects an HxWx3 RGB image.")
 
-        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
         cfg = self.config
+        blur_size = max(1, int(cfg.gaussian_blur_kernel_px))
+        if blur_size % 2 == 0:
+            blur_size += 1
+        filtered = (
+            image
+            if blur_size == 1
+            else cv2.GaussianBlur(image, (blur_size, blur_size), 0)
+        )
+        hsv = cv2.cvtColor(filtered, cv2.COLOR_RGB2HSV)
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
         for lower_hue, upper_hue in cfg.hue_ranges:
             color_mask = cv2.inRange(
