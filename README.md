@@ -25,8 +25,9 @@
 - M0：统一 RGB 感知—控制—评价入口已完成第一版；
 - M1：传统颜色/轮廓检测 + IBVS 粗对准已完成；
 - M2：YOLO 共用粗观测接口、合成数据生成、训练和在线闭环已完成第一版；
-- M3：NIH 场景内外环椭圆几何、2.5D 平移精对准和连续 5 帧验收已完成第一版；
-- M4：授权交接、独立进给、插入中视觉撤权、解析间隙和 MuJoCo 接触指标已完成第一版。
+- M3：NIH 场景内外环椭圆几何、六轴平移/旋转精对准和连续 5 帧验收已完成；
+- M4：完整 Meca500 六轴 plant 中的视觉授权、轴向进给、视觉撤权、解析间隙和
+  MuJoCo 接触指标已打通；eye-in-hand 与世界视角来自同一 `MjModel/MjData`。
 - M5：已建立冻结前批量评测入口；正式 500 回合冻结结论尚未完成。
 
 控制动作只读取 eye-in-hand RGB 检测结果。MuJoCo 目标真值只用于评价，特权几何分割
@@ -65,6 +66,7 @@ python run_mujoco_coarse_batch.py --episodes 100 --detector traditional
 python run_mujoco_fine_alignment.py
 python run_mujoco_fine_batch.py --episodes 50
 python run_mujoco_full_flow.py
+python run_mujoco_meca500_full_flow.py
 python run_m5_prefreeze_batch.py --episodes 20
 ```
 

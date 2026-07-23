@@ -10,7 +10,7 @@
   <option timestep="0.002" gravity="0 0 0" integrator="implicitfast"/>
 
   <visual>
-    <global offwidth="1280" offheight="720"/>
+    <global offwidth="2560" offheight="1080"/>
     <quality shadowsize="4096"/>
     <map znear="0.002" zfar="2.0"/>
     <headlight ambient="0.38 0.38 0.38" diffuse="0.45 0.45 0.45" specular="0.14 0.14 0.14"/>
@@ -58,6 +58,7 @@
     <material name="disc_mat" rgba="0.95 0.72 0.46 0.72"/>
     <material name="macula_mat" rgba="0.46 0.06 0.06 0.65"/>
     <material name="trocar_mat" rgba="0.00 0.46 0.64 1"/>
+    <material name="trocar_body_mat" rgba="0.04 0.13 0.20 1"/>
     <material name="lumen_mat" rgba="0.012 0.014 0.018 1"/>
     <material name="safe_mat" rgba="0.00 0.62 0.45 0.55"/>
   </asset>
@@ -130,11 +131,28 @@
                       <geom name="instrument_mount_screw_4" type="cylinder" pos="0 -0.0062 0.00204" size="0.00135 0.00005" material="meca_light" mass="0"/>
                       <geom name="instrument_adapter" type="cylinder" fromto="0 0 0.0021 0 0 0.012" size="0.0025" material="meca_light" mass="0.010"/>
                       <!-- Visible needle length reduced from 108 mm to 36 mm. -->
-                      <geom name="instrument_shaft" type="capsule" fromto="0 0 0.012 0 0 0.048" size="0.000255" material="tool_mat" mass="0.005"/>
-                      <geom name="instrument_tip_marker" type="sphere" pos="0 0 0.048" size="0.00036" rgba="0.96 0.38 0.08 1" mass="0"/>
-                      <site name="tool_tip" pos="0 0 0.048" size="0.00055" rgba="0.00 0.45 0.95 1"/>
-                      <!-- Camera optical axis follows the outward +z tool axis. -->
-                      <camera name="eye_in_hand" mode="fixed" pos="0.004 0 0.036" xyaxes="0 1 0 1 0 0" fovy="41.9741"/>
+                      <geom name="instrument_shaft" type="capsule"
+                            fromto="0 0 0.012 0 0 0.048" size="0.000255"
+                            material="tool_mat" mass="0.005"
+                            contype="1" conaffinity="1" group="1"/>
+                      <geom name="instrument_tip_marker" type="sphere"
+                            pos="0 0 0.048" size="0.00036"
+                            rgba="0.96 0.38 0.08 1" mass="0" group="1"/>
+                      <site name="tool_tip" pos="0 0 0.048" size="0.00055"
+                            rgba="0.00 0.45 0.95 1" group="1"/>
+                      <!--
+                        Coaxial virtual eye-in-hand frame. Its local -z optical
+                        axis maps to the tool +z insertion axis. The physical
+                        camera/needle extrinsic remains a later calibration
+                        item; this frame removes the former 4 mm lateral offset.
+                      -->
+                      <body name="eye_in_hand_frame" pos="0 0 0.036"
+                            quat="0 0.7071067812 0.7071067812 0">
+                        <camera name="eye_in_hand" mode="fixed" pos="0 0 0"
+                                fovy="41.9741"/>
+                        <site name="eye_in_hand_origin" pos="0 0 0"
+                              size="0.00025" rgba="0 0.8 1 0.9" group="1"/>
+                      </body>
                     </body>
                   </body>
                 </body>
@@ -164,13 +182,34 @@
         centre. The axial coordinate follows the 24 mm globe surface rather
         than placing the trocar over the corneal/pupil observation aperture.
       -->
-      <body name="single_trocar_visual" pos="-0.00881760 0.00800 -0.00150"
+      <body name="single_trocar_visual" pos="-0.00981760 0.00800 -0.00150"
             euler="0 0 0.3490658504">
-        <geom name="trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_mat" contype="0" conaffinity="0"/>
-        <geom name="trocar_lumen" type="cylinder" pos="-0.00127 0 0" euler="0 1.57079632679 0" size="0.00050 0.00006" material="lumen_mat" contype="0" conaffinity="0"/>
-        <geom name="trocar_flange" type="cylinder" pos="-0.00138 0 0" euler="0 1.57079632679 0" size="0.00132 0.00012" material="trocar_mat" contype="0" conaffinity="0"/>
+        <geom name="trocar_outer" type="cylinder" euler="0 1.57079632679 0" size="0.0010 0.00125" material="trocar_body_mat" contype="0" conaffinity="0"/>
+        <geom name="trocar_lumen" type="cylinder" pos="-0.00152 0 0" euler="0 1.57079632679 0" size="0.00050 0.00006" material="lumen_mat" contype="0" conaffinity="0"/>
+        <!--
+          Thin cyan face target used for ellipse pose estimation. A thick
+          cylinder silhouette hides several degrees of tilt because its side
+          wall expands the projected minor axis; the structural trocar body
+          remains full-depth in trocar_outer and in the contact proxies.
+        -->
+        <geom name="trocar_flange" type="cylinder" pos="-0.00148 0 0"
+              euler="0 1.57079632679 0" size="0.00132 0.00002"
+              material="trocar_mat" contype="0" conaffinity="0"/>
         <site name="trocar_center" pos="0 0 0" euler="0 1.57079632679 0"
               size="0.00065" rgba="0.00 0.62 0.45 0.95"/>
+        <!-- Hidden square-wall contact proxy aligned with the tilted local x axis. -->
+        <geom name="trocar_wall_pos_y" type="box" pos="0 0.00075 0"
+              size="0.00125 0.00025 0.00050" rgba="0 0 0 0"
+              contype="1" conaffinity="1" group="3"/>
+        <geom name="trocar_wall_neg_y" type="box" pos="0 -0.00075 0"
+              size="0.00125 0.00025 0.00050" rgba="0 0 0 0"
+              contype="1" conaffinity="1" group="3"/>
+        <geom name="trocar_wall_pos_z" type="box" pos="0 0 0.00075"
+              size="0.00125 0.00050 0.00025" rgba="0 0 0 0"
+              contype="1" conaffinity="1" group="3"/>
+        <geom name="trocar_wall_neg_z" type="box" pos="0 0 -0.00075"
+              size="0.00125 0.00050 0.00025" rgba="0 0 0 0"
+              contype="1" conaffinity="1" group="3"/>
       </body>
       <light name="intraocular_fill" pos="-0.004 0.000 0.000" dir="0.85 0 -0.05" cutoff="75" exponent="6" diffuse="0.52 0.55 0.50" specular="0.18 0.18 0.16"/>
     </body>
