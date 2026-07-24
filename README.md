@@ -94,7 +94,8 @@ python run_mujoco_coarse_alignment.py `
 [M5 冻结前就绪评测](docs/experiments/M5_PREFREEZE_READINESS_20260723.md)和
 [M5 六轴冻结协议](docs/experiments/M5_FROZEN_SIX_AXIS_PROTOCOL_20260724.md)。
 当前已知问题与安全边界见
-[技术风险清单](docs/project/CURRENT_TECHNICAL_RISKS_20260724.md)。
+[技术风险清单](docs/project/CURRENT_TECHNICAL_RISKS_20260724.md)，后续执行顺序见
+[M5–M7 下一阶段规划](docs/plans/NEXT_STAGE_M5_M6_M7_PLAN_20260724.md)。
 
 ## 安全边界
 
