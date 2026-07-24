@@ -28,7 +28,7 @@
 - M3：NIH 场景内外环椭圆几何、六轴平移/旋转精对准和连续 5 帧验收已完成；
 - M4：完整 Meca500 六轴 plant 中的视觉授权、轴向进给、视觉撤权、解析间隙和
   MuJoCo 接触指标已打通；eye-in-hand 与世界视角来自同一 `MjModel/MjData`。
-- M5：已建立冻结前批量评测入口；正式 500 回合冻结结论尚未完成。
+- M5：已建立统一六轴 500 回合冻结入口；正式批次按固定种子运行并逐批检查点续存。
 
 控制动作只读取 eye-in-hand RGB 检测结果。MuJoCo 目标真值只用于评价，特权几何分割
 只用于生成训练标签，不进入在线控制器。
@@ -91,7 +91,8 @@ python run_mujoco_coarse_alignment.py `
 [M3 NIH 精对准记录](docs/experiments/M3_NIH_HRA_FINE_ALIGNMENT_20260723.md)和
 [M4 单臂完整流程记录](docs/experiments/M4_NIH_HRA_FULL_FLOW_20260723.md)、
 [场景与视频冻结合同](docs/project/SCENE_AND_VIDEO_CONTRACT_20260723.md)和
-[M5 冻结前就绪评测](docs/experiments/M5_PREFREEZE_READINESS_20260723.md)。
+[M5 冻结前就绪评测](docs/experiments/M5_PREFREEZE_READINESS_20260723.md)和
+[M5 六轴冻结协议](docs/experiments/M5_FROZEN_SIX_AXIS_PROTOCOL_20260724.md)。
 
 ## 安全边界
 
