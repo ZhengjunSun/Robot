@@ -3,6 +3,7 @@ from __future__ import annotations
 from run_m5_1_paired_replay import (
     m5_1_temporal_config,
     paired_summary,
+    select_cases,
 )
 
 
@@ -42,3 +43,17 @@ def test_paired_summary_reports_transitions() -> None:
         "baseline_fail_to_m5_1_success": 1,
         "baseline_success_to_m5_1_fail": 1,
     }
+
+
+def test_select_cases_supports_balanced_explicit_smoke_set() -> None:
+    cases = [
+        {"episode": 4},
+        {"episode": 7},
+        {"episode": 12},
+    ]
+    selected = select_cases(
+        cases,
+        episode_ids=[12, 4],
+        maximum_cases=0,
+    )
+    assert [item["episode"] for item in selected] == [12, 4]

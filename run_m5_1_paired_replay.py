@@ -613,6 +613,34 @@ def paired_summary(
     }
 
 
+def select_cases(
+    cases: list[dict[str, Any]],
+    *,
+    episode_ids: list[int] | None,
+    maximum_cases: int,
+) -> list[dict[str, Any]]:
+    if episode_ids:
+        by_episode = {
+            int(case["episode"]): case
+            for case in cases
+        }
+        missing = [
+            episode_id
+            for episode_id in episode_ids
+            if episode_id not in by_episode
+        ]
+        if missing:
+            raise ValueError(
+                f"Replay manifest lacks requested episodes: {missing}"
+            )
+        selected = [by_episode[episode_id] for episode_id in episode_ids]
+    else:
+        selected = list(cases)
+    if maximum_cases > 0:
+        selected = selected[:maximum_cases]
+    return selected
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="M5.1 same-seed paired perception replay."
@@ -629,6 +657,15 @@ def main() -> None:
     parser.add_argument("--settle-steps", type=int, default=100)
     parser.add_argument("--maximum-alignment-steps", type=int, default=260)
     parser.add_argument("--maximum-cases", type=int, default=0)
+    parser.add_argument(
+        "--episode-ids",
+        type=int,
+        nargs="*",
+        help=(
+            "Replay exact manifest episode IDs in the provided order. "
+            "Useful for a failure-class-balanced smoke test."
+        ),
+    )
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument(
         "--resume",
@@ -652,9 +689,11 @@ def main() -> None:
         raise ValueError(
             "Replay manifest and M5 baseline protocol hashes differ."
         )
-    cases = list(manifest["episodes"])
-    if args.maximum_cases > 0:
-        cases = cases[: args.maximum_cases]
+    cases = select_cases(
+        list(manifest["episodes"]),
+        episode_ids=args.episode_ids,
+        maximum_cases=args.maximum_cases,
+    )
     payloads = [
         (int(case["episode"]), int(case["episode_seed"]))
         for case in cases
