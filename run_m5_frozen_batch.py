@@ -46,6 +46,13 @@ from single_arm_precision_rl.clearance_contract import ClearanceSample
 ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT = ROOT / "output" / "m5_frozen_500"
 TARGET_STANDOFF_MM = 22.0
+RANDOMIZATION_STRATA = (
+    "geometry",
+    "photometric",
+    "calibration",
+    "occlusion",
+    "combined",
+)
 _WORKER_PLANT: Meca500VisualAlignmentPlant | None = None
 _WORKER_HEIGHT = 0
 _WORKER_MAXIMUM_ALIGNMENT_STEPS = 0
@@ -89,6 +96,7 @@ def current_git_commit() -> str | None:
 
 @dataclass(frozen=True)
 class DomainSample:
+    randomization_stratum: str
     initial_joint_delta_deg: tuple[float, ...]
     trocar_translation_mm: tuple[float, float, float]
     trocar_rotation_deg_xyz: tuple[float, float, float]
@@ -172,9 +180,11 @@ def sample_domain(
     rng: np.random.Generator,
     *,
     image_height: int,
+    stratum: str = "combined",
 ) -> DomainSample:
     image_scale = image_height / 960.0
-    return DomainSample(
+    sampled = DomainSample(
+        randomization_stratum="combined",
         initial_joint_delta_deg=tuple(
             float(value) for value in rng.uniform(-1.5, 1.5, size=6)
         ),
@@ -206,10 +216,48 @@ def sample_domain(
         occlusion_probability=float(rng.uniform(0.0, 0.025)),
         occlusion_fraction=float(rng.uniform(0.05, 0.12)),
     )
+    nominal = nominal_domain()
+    if stratum == "combined":
+        return sampled
+    if stratum == "geometry":
+        return replace(
+            nominal,
+            randomization_stratum=stratum,
+            initial_joint_delta_deg=sampled.initial_joint_delta_deg,
+            trocar_translation_mm=sampled.trocar_translation_mm,
+            trocar_rotation_deg_xyz=sampled.trocar_rotation_deg_xyz,
+        )
+    if stratum == "photometric":
+        return replace(
+            nominal,
+            randomization_stratum=stratum,
+            rgb_gain=sampled.rgb_gain,
+            rgb_noise_std=sampled.rgb_noise_std,
+            blur_kernel=sampled.blur_kernel,
+            trocar_rgb_scale=sampled.trocar_rgb_scale,
+            sclera_rgb_scale=sampled.sclera_rgb_scale,
+            light_intensity_scale=sampled.light_intensity_scale,
+        )
+    if stratum == "calibration":
+        return replace(
+            nominal,
+            randomization_stratum=stratum,
+            camera_fovy_scale=sampled.camera_fovy_scale,
+            principal_point_shift_px=sampled.principal_point_shift_px,
+        )
+    if stratum == "occlusion":
+        return replace(
+            nominal,
+            randomization_stratum=stratum,
+            occlusion_probability=sampled.occlusion_probability,
+            occlusion_fraction=sampled.occlusion_fraction,
+        )
+    raise ValueError(f"Unknown randomization stratum: {stratum}")
 
 
 def nominal_domain() -> DomainSample:
     return DomainSample(
+        randomization_stratum="nominal",
         initial_joint_delta_deg=(0.0,) * 6,
         trocar_translation_mm=(0.0, 0.0, 0.0),
         trocar_rotation_deg_xyz=(0.0, 0.0, 0.0),
@@ -330,7 +378,13 @@ def run_episode(
     sample = (
         nominal_domain()
         if nominal
-        else sample_domain(rng, image_height=image_height)
+        else sample_domain(
+            rng,
+            image_height=image_height,
+            stratum=RANDOMIZATION_STRATA[
+                episode % len(RANDOMIZATION_STRATA)
+            ],
+        )
     )
     plant.set_domain_randomization(
         trocar_translation_mm=sample.trocar_translation_mm,
@@ -744,6 +798,35 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
             "max": float(np.max(items)),
         }
 
+    by_stratum: dict[str, dict[str, float | int]] = {}
+    strata = sorted(
+        {str(item["randomization_stratum"]) for item in episodes}
+    )
+    for stratum in strata:
+        group = [
+            item
+            for item in episodes
+            if item["randomization_stratum"] == stratum
+        ]
+        by_stratum[stratum] = {
+            "episodes": len(group),
+            "target_acquisition_rate": float(
+                np.mean([item["target_acquired"] for item in group])
+            ),
+            "coarse_success_rate": float(
+                np.mean([item["coarse_success"] for item in group])
+            ),
+            "fine_success_rate": float(
+                np.mean([item["fine_success"] for item in group])
+            ),
+            "full_flow_success_rate": float(
+                np.mean([item["full_flow_success"] for item in group])
+            ),
+            "mean_alignment_steps": float(
+                np.mean([item["alignment_steps"] for item in group])
+            ),
+        }
+
     return {
         "target_acquisition_rate": rate("target_acquired"),
         "coarse_success_rate": rate("coarse_success"),
@@ -787,6 +870,7 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
         "failure_reason_frame_counts": dict(
             failure_frame_counter.most_common()
         ),
+        "by_randomization_stratum": by_stratum,
     }
 
 
@@ -828,6 +912,13 @@ def write_outputs(
         "privileged_truth_used_for_control": False,
         "privileged_truth_use": "episode evaluation and aggregation only",
         "randomization_contract": {
+            "official_500_episode_strata": {
+                "geometry": 100,
+                "photometric": 100,
+                "calibration": 100,
+                "occlusion": 100,
+                "combined": 100,
+            },
             "initial_joint_delta_deg": [-1.5, 1.5],
             "trocar_translation_mm_xyz": [
                 [-0.60, 0.60],

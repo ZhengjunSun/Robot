@@ -93,6 +93,8 @@ python run_mujoco_coarse_alignment.py `
 [场景与视频冻结合同](docs/project/SCENE_AND_VIDEO_CONTRACT_20260723.md)和
 [M5 冻结前就绪评测](docs/experiments/M5_PREFREEZE_READINESS_20260723.md)和
 [M5 六轴冻结协议](docs/experiments/M5_FROZEN_SIX_AXIS_PROTOCOL_20260724.md)。
+当前已知问题与安全边界见
+[技术风险清单](docs/project/CURRENT_TECHNICAL_RISKS_20260724.md)。
 
 ## 安全边界
 

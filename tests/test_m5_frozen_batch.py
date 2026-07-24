@@ -13,6 +13,7 @@ from run_m5_frozen_batch import (
 
 def test_nominal_domain_has_no_hidden_perturbation() -> None:
     sample = nominal_domain()
+    assert sample.randomization_stratum == "nominal"
     assert sample.initial_joint_delta_deg == (0.0,) * 6
     assert sample.trocar_translation_mm == (0.0, 0.0, 0.0)
     assert sample.trocar_rotation_deg_xyz == (0.0, 0.0, 0.0)
@@ -26,6 +27,39 @@ def test_frozen_domain_sample_is_reproducible() -> None:
     first = sample_domain(np.random.default_rng(20260724), image_height=960)
     second = sample_domain(np.random.default_rng(20260724), image_height=960)
     assert first == second
+
+
+def test_randomization_strata_isolate_factor_families() -> None:
+    geometry = sample_domain(
+        np.random.default_rng(11),
+        image_height=960,
+        stratum="geometry",
+    )
+    photometric = sample_domain(
+        np.random.default_rng(11),
+        image_height=960,
+        stratum="photometric",
+    )
+    calibration = sample_domain(
+        np.random.default_rng(11),
+        image_height=960,
+        stratum="calibration",
+    )
+    occlusion = sample_domain(
+        np.random.default_rng(11),
+        image_height=960,
+        stratum="occlusion",
+    )
+    nominal = nominal_domain()
+
+    assert geometry.randomization_stratum == "geometry"
+    assert geometry.rgb_gain == nominal.rgb_gain
+    assert photometric.randomization_stratum == "photometric"
+    assert photometric.trocar_translation_mm == nominal.trocar_translation_mm
+    assert calibration.randomization_stratum == "calibration"
+    assert calibration.rgb_gain == nominal.rgb_gain
+    assert occlusion.randomization_stratum == "occlusion"
+    assert occlusion.camera_fovy_scale == nominal.camera_fovy_scale
 
 
 def test_frozen_domain_sample_respects_preregistered_bounds() -> None:
