@@ -317,7 +317,6 @@ def run_episode(
     insertion = TraditionalInsertionHandoffController()
 
     started = time.perf_counter()
-    command_vectors: list[np.ndarray] = []
     tool_positions = [plant.tool_position_world()]
     center_history: list[float] = []
     phase_counts: Counter[str] = Counter()
@@ -379,7 +378,6 @@ def run_episode(
                 dtype=np.float64,
             )
             _apply_pose_translation(perturbed, tuple(camera_command))
-            command_vectors.append(camera_command)
             tool_positions.append(plant.tool_position_world())
             continue
         if outer_raw is not None and not outer_servo.is_aligned(outer_raw):
@@ -390,7 +388,6 @@ def run_episode(
                     dtype=np.float64,
                 )
                 _apply_pose_translation(perturbed, tuple(camera_command))
-                command_vectors.append(camera_command)
                 tool_positions.append(plant.tool_position_world())
                 continue
             outer_command = outer_servo.command(
@@ -411,7 +408,6 @@ def run_episode(
                         delta_q,
                         maximum_joint_step_deg=10.0,
                     )
-                    command_vectors.append(rotation)
                     tool_positions.append(plant.tool_position_world())
             continue
         if outer_raw is not None and not outer_residual_applied:
@@ -423,9 +419,6 @@ def run_episode(
                 iterations=20,
             )
             plant.apply_joint_delta(delta_q, maximum_joint_step_deg=25.0)
-            command_vectors.append(
-                np.asarray((*correction, 0.0), dtype=np.float64)
-            )
             tool_positions.append(plant.tool_position_world())
             outer_residual_applied = True
             continue
@@ -437,8 +430,21 @@ def run_episode(
             dtype=np.float64,
         )
         _apply_pose_translation(perturbed, tuple(camera_command))
-        command_vectors.append(camera_command)
         tool_positions.append(plant.tool_position_world())
+
+    alignment_positions = np.asarray(tool_positions, dtype=np.float64)
+    alignment_displacements = np.diff(alignment_positions, axis=0)
+    alignment_path_length_mm = float(
+        np.linalg.norm(alignment_displacements, axis=1).sum() * 1000.0
+    )
+    alignment_reversals = sum(
+        int(float(np.dot(a, b)) < 0.0)
+        for a, b in zip(
+            alignment_displacements,
+            alignment_displacements[1:],
+        )
+        if np.linalg.norm(a) > 1e-9 and np.linalg.norm(b) > 1e-9
+    )
 
     insertion_complete = False
     insertion_stop_reason = "alignment_not_authorized"
@@ -527,13 +533,9 @@ def run_episode(
             full_trajectory_available=True,
         )
     )
-    positions = np.asarray(tool_positions, dtype=np.float64)
-    path_length_mm = float(
-        np.linalg.norm(np.diff(positions, axis=0), axis=1).sum() * 1000.0
-    )
-    reversals = sum(
-        int(float(np.dot(a, b)) < 0.0)
-        for a, b in zip(command_vectors, command_vectors[1:])
+    all_positions = np.asarray(tool_positions, dtype=np.float64)
+    total_tcp_path_length_mm = float(
+        np.linalg.norm(np.diff(all_positions, axis=0), axis=1).sum() * 1000.0
     )
     final_truth = plant.evaluation_pose_errors()
     final_metrics = (
@@ -556,8 +558,9 @@ def run_episode(
         "alignment_steps": alignment_steps,
         "insertion_steps": insertion_steps,
         "insertion_extension_mm": extension_mm,
-        "alignment_path_length_mm": path_length_mm,
-        "alignment_reversal_count": reversals,
+        "alignment_path_length_mm": alignment_path_length_mm,
+        "total_tcp_path_length_mm": total_tcp_path_length_mm,
+        "alignment_reversal_count": alignment_reversals,
         "target_lost_frames": target_lost_frames,
         "occluded_frames": perturbed.occluded_frames,
         "phase_counts": dict(phase_counts),
