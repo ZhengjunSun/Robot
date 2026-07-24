@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import multiprocessing as mp
+import subprocess
 import time
 from collections import Counter
 from dataclasses import asdict, dataclass, replace
@@ -49,6 +51,42 @@ _WORKER_HEIGHT = 0
 _WORKER_MAXIMUM_ALIGNMENT_STEPS = 0
 
 
+def protocol_fingerprint() -> str:
+    """Hash every source artifact that can change frozen M5 behavior."""
+
+    paths = (
+        ROOT / "run_m5_frozen_batch.py",
+        ROOT / "run_mujoco_meca500_full_flow.py",
+        ROOT / "real_3d_alignment" / "meca500_visual_env.py",
+        ROOT / "real_3d_alignment" / "six_axis_visual_servo.py",
+        ROOT / "real_3d_alignment" / "fine_vision.py",
+        ROOT / "real_3d_alignment" / "insertion_handoff.py",
+        ROOT
+        / "3d_modeling"
+        / "mujoco"
+        / "meca500_r4_ophthalmic_visual_execution_scene.xml",
+    )
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(path.relative_to(ROOT).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def current_git_commit() -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 @dataclass(frozen=True)
 class DomainSample:
     initial_joint_delta_deg: tuple[float, ...]
@@ -61,6 +99,7 @@ class DomainSample:
     blur_kernel: int
     trocar_rgb_scale: tuple[float, float, float]
     sclera_rgb_scale: tuple[float, float, float]
+    light_intensity_scale: float
     occlusion_probability: float
     occlusion_fraction: float
 
@@ -163,6 +202,7 @@ def sample_domain(
         sclera_rgb_scale=tuple(
             float(value) for value in rng.uniform(0.92, 1.08, size=3)
         ),
+        light_intensity_scale=float(rng.uniform(0.90, 1.10)),
         occlusion_probability=float(rng.uniform(0.0, 0.025)),
         occlusion_fraction=float(rng.uniform(0.05, 0.12)),
     )
@@ -180,6 +220,7 @@ def nominal_domain() -> DomainSample:
         blur_kernel=1,
         trocar_rgb_scale=(1.0, 1.0, 1.0),
         sclera_rgb_scale=(1.0, 1.0, 1.0),
+        light_intensity_scale=1.0,
         occlusion_probability=0.0,
         occlusion_fraction=0.0,
     )
@@ -297,6 +338,7 @@ def run_episode(
         camera_fovy_scale=sample.camera_fovy_scale,
         trocar_rgb_scale=sample.trocar_rgb_scale,
         sclera_rgb_scale=sample.sclera_rgb_scale,
+        light_intensity_scale=sample.light_intensity_scale,
     )
     initial_q = (
         plant.SEARCH_Q_DEG
@@ -320,7 +362,7 @@ def run_episode(
     tool_positions = [plant.tool_position_world()]
     center_history: list[float] = []
     phase_counts: Counter[str] = Counter()
-    failure_reasons: Counter[str] = Counter()
+    failure_reason_frames: Counter[str] = Counter()
     target_acquired = False
     coarse_success = False
     fine_success = False
@@ -354,7 +396,7 @@ def run_episode(
             ),
         )
         phase_counts[final_decision.phase.value] += 1
-        failure_reasons.update(final_decision.reasons)
+        failure_reason_frames.update(final_decision.reasons)
         if coarse is not None:
             center_history.append(float(coarse.observation.center_error_px))
             coarse_success = coarse_success or (
@@ -564,7 +606,12 @@ def run_episode(
         "target_lost_frames": target_lost_frames,
         "occluded_frames": perturbed.occluded_frames,
         "phase_counts": dict(phase_counts),
-        "failure_reasons": dict(failure_reasons),
+        "failure_reason_frame_counts": dict(failure_reason_frames),
+        "terminal_alignment_reasons": (
+            []
+            if final_decision is None
+            else list(final_decision.reasons)
+        ),
         "insertion_stop_reason": insertion_stop_reason,
         "final_visual_metrics": final_metrics,
         "final_evaluation_only_pose_errors": final_truth,
@@ -576,7 +623,27 @@ def run_episode(
         "center_overshoot_px": (
             None
             if not center_history
-            else float(max(center_history) - min(center_history))
+            else float(
+                max(
+                    0.0,
+                    max(
+                        center_history[
+                            next(
+                                (
+                                    index
+                                    for index, value in enumerate(
+                                        center_history
+                                    )
+                                    if value
+                                    <= 100.0 * image_height / 960.0
+                                ),
+                                0,
+                            ) :
+                        ]
+                    )
+                    - center_history[-1],
+                )
+            )
         ),
         "terminal_center_jitter_px": (
             None
@@ -622,13 +689,23 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
         return float(np.mean([bool(item[key]) for item in episodes]))
 
     successes = [item for item in episodes if item["full_flow_success"]]
-    failure_counter: Counter[str] = Counter()
+    failure_frame_counter: Counter[str] = Counter()
+    failure_episode_counter: Counter[str] = Counter()
     for item in episodes:
         if item["full_flow_success"]:
             continue
-        failure_counter.update(item["failure_reasons"])
-        if item["insertion_stop_reason"] != "target_insertion_depth_reached":
-            failure_counter[item["insertion_stop_reason"]] += 1
+        failure_frame_counter.update(item["failure_reason_frame_counts"])
+        if not item["target_acquired"]:
+            failure_episode_counter["target_not_acquired"] += 1
+        elif not item["coarse_success"]:
+            failure_episode_counter["coarse_alignment_failed"] += 1
+        elif not item["fine_success"]:
+            reasons = item["terminal_alignment_reasons"]
+            failure_episode_counter[
+                reasons[0] if reasons else "fine_alignment_failed"
+            ] += 1
+        else:
+            failure_episode_counter[item["insertion_stop_reason"]] += 1
 
     def values(path: tuple[str, ...], source=episodes) -> list[float]:
         output: list[float] = []
@@ -648,6 +725,25 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
         ("clearance_contract", "minimum_robust_clearance_mm"),
         successes,
     )
+    aligned = [item for item in episodes if item["fine_success"]]
+    aligned_lateral = values(
+        ("final_evaluation_only_pose_errors", "lateral_error_mm"),
+        aligned,
+    )
+    aligned_axis = values(
+        ("final_evaluation_only_pose_errors", "axis_error_deg"),
+        aligned,
+    )
+
+    def distribution(items: list[float]) -> dict[str, float] | None:
+        if not items:
+            return None
+        return {
+            "mean": float(np.mean(items)),
+            "p95": float(np.quantile(items, 0.95)),
+            "max": float(np.max(items)),
+        }
+
     return {
         "target_acquisition_rate": rate("target_acquired"),
         "coarse_success_rate": rate("coarse_success"),
@@ -667,16 +763,12 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
         "mean_elapsed_s": float(
             np.mean([item["elapsed_s"] for item in episodes])
         ),
-        "final_lateral_error_mm": {
-            "mean": float(np.mean(lateral)),
-            "p95": float(np.quantile(lateral, 0.95)),
-            "max": float(np.max(lateral)),
-        },
-        "final_axis_error_deg": {
-            "mean": float(np.mean(axis)),
-            "p95": float(np.quantile(axis, 0.95)),
-            "max": float(np.max(axis)),
-        },
+        "final_lateral_error_mm_all_episodes": distribution(lateral),
+        "final_axis_error_deg_all_episodes": distribution(axis),
+        "final_lateral_error_mm_aligned_episodes": distribution(
+            aligned_lateral
+        ),
+        "final_axis_error_deg_aligned_episodes": distribution(aligned_axis),
         "minimum_robust_clearance_mm": (
             None if not clearance else float(np.min(clearance))
         ),
@@ -689,7 +781,12 @@ def summarize(episodes: list[dict[str, Any]]) -> dict[str, Any]:
                 for item in episodes
             )
         ),
-        "failure_reason_counts": dict(failure_counter.most_common()),
+        "failure_episode_counts": dict(
+            failure_episode_counter.most_common()
+        ),
+        "failure_reason_frame_counts": dict(
+            failure_frame_counter.most_common()
+        ),
     }
 
 
@@ -700,6 +797,9 @@ def write_outputs(
     seed: int,
     width: int,
     height: int,
+    settle_steps: int,
+    maximum_alignment_steps: int,
+    nominal: bool,
 ) -> tuple[Path, Path]:
     summary = summarize(episodes)
     report = {
@@ -709,6 +809,13 @@ def write_outputs(
         "episodes": len(episodes),
         "seed": seed,
         "image_size_px": [width, height],
+        "protocol_sha256": protocol_fingerprint(),
+        "git_commit": current_git_commit(),
+        "run_configuration": {
+            "settle_steps": settle_steps,
+            "maximum_alignment_steps": maximum_alignment_steps,
+            "nominal": nominal,
+        },
         "anatomy": NIH_HRA_EYE_SOURCE,
         "eye_orientation": "upright",
         "nominal_trocar_tilt_deg": TROCAR_TILT_DEG,
@@ -734,6 +841,7 @@ def write_outputs(
             "rgb_noise_std": [0.0, 2.0],
             "gaussian_blur_kernel": [1, 3],
             "material_rgb_scale": [0.92, 1.08],
+            "mujoco_light_intensity_scale": [0.90, 1.10],
             "per_frame_occlusion_probability": [0.0, 0.025],
             "occlusion_fraction_of_short_side": [0.05, 0.12],
         },
@@ -820,6 +928,20 @@ def main() -> None:
             raise ValueError(
                 "Existing report image size does not match this run."
             )
+        if existing.get("protocol_sha256") != protocol_fingerprint():
+            raise ValueError(
+                "Existing report protocol fingerprint does not match "
+                "the current frozen sources."
+            )
+        expected_run_configuration = {
+            "settle_steps": args.settle_steps,
+            "maximum_alignment_steps": args.maximum_alignment_steps,
+            "nominal": args.nominal,
+        }
+        if existing.get("run_configuration") != expected_run_configuration:
+            raise ValueError(
+                "Existing report run configuration does not match this run."
+            )
         episodes = list(existing.get("episode_results", []))
     completed_indices = {int(item["episode"]) for item in episodes}
     payloads = [
@@ -852,6 +974,9 @@ def main() -> None:
                 seed=args.seed,
                 width=args.width,
                 height=args.height,
+                settle_steps=args.settle_steps,
+                maximum_alignment_steps=args.maximum_alignment_steps,
+                nominal=args.nominal,
             )
 
     if args.workers == 1:
@@ -902,6 +1027,9 @@ def main() -> None:
         seed=args.seed,
         width=args.width,
         height=args.height,
+        settle_steps=args.settle_steps,
+        maximum_alignment_steps=args.maximum_alignment_steps,
+        nominal=args.nominal,
     )
     print(json.dumps(summarize(episodes), ensure_ascii=False, indent=2))
     print(f"Report: {report_path}")

@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
-from run_m5_frozen_batch import nominal_domain, sample_domain
+from real_3d_alignment.meca500_visual_env import Meca500VisualAlignmentPlant
+from run_m5_frozen_batch import (
+    nominal_domain,
+    protocol_fingerprint,
+    sample_domain,
+)
 
 
 def test_nominal_domain_has_no_hidden_perturbation() -> None:
@@ -13,6 +19,7 @@ def test_nominal_domain_has_no_hidden_perturbation() -> None:
     assert sample.camera_fovy_scale == 1.0
     assert sample.principal_point_shift_px == (0.0, 0.0)
     assert sample.occlusion_probability == 0.0
+    assert sample.light_intensity_scale == 1.0
 
 
 def test_frozen_domain_sample_is_reproducible() -> None:
@@ -46,3 +53,26 @@ def test_frozen_domain_sample_respects_preregistered_bounds() -> None:
     assert sample.blur_kernel in {1, 3}
     assert 0.0 <= sample.occlusion_probability <= 0.025
     assert 0.05 <= sample.occlusion_fraction <= 0.12
+    assert 0.90 <= sample.light_intensity_scale <= 1.10
+
+
+def test_frozen_protocol_has_sha256_fingerprint() -> None:
+    fingerprint = protocol_fingerprint()
+    assert len(fingerprint) == 64
+    int(fingerprint, 16)
+
+
+def test_mujoco_light_randomization_is_reversible() -> None:
+    pytest.importorskip("mujoco")
+    plant = Meca500VisualAlignmentPlant(
+        image_size_px=(160, 120),
+        settle_steps=1,
+    )
+    try:
+        baseline = plant.model.light_diffuse.copy()
+        plant.set_domain_randomization(light_intensity_scale=0.90)
+        assert np.allclose(plant.model.light_diffuse, baseline * 0.90)
+        plant.reset_domain()
+        assert np.allclose(plant.model.light_diffuse, baseline)
+    finally:
+        plant.close()

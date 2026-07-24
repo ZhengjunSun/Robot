@@ -41,6 +41,7 @@ eye-in-hand RGB
 | 高斯噪声标准差 | `[0, 2]` 灰度级 |
 | 模糊核 | `1` 或 `3` |
 | 戳卡/巩膜材质 RGB 比例 | 每通道 `[0.92, 1.08]` |
+| MuJoCo 光源强度比例 | `[0.90, 1.10]` |
 | 单帧遮挡概率 | `[0, 0.025]` |
 | 遮挡边长 | 图像短边的 `[0.05, 0.12]` |
 
@@ -73,8 +74,13 @@ python run_m5_frozen_batch.py `
 - `output/m5_frozen_500/m5_frozen_stdout.log`
 - `output/m5_frozen_500/m5_frozen_stderr.log`
 
-`--resume` 只补跑缺失的回合编号，并校验种子和图像尺寸。达到 500 回合前，报告中的
+`--resume` 只补跑缺失的回合编号，并校验种子、图像尺寸、动力学稳定步数、最大对准
+步数、名义/随机模式以及完整协议源码 SHA-256。报告同时记录 Git 提交。达到 500
+回合前，报告中的
 `official_m5_frozen_baseline` 必须保持为 `false`。
+
+失败统计分为两层：`failure_episode_counts` 表示互斥的失败回合主因；
+`failure_reason_frame_counts` 表示控制过程中各拒绝原因持续了多少帧，二者不得混用。
 
 ## 已知边界
 

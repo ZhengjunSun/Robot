@@ -168,6 +168,8 @@ class Meca500VisualAlignmentPlant:
         self._base_sclera_rgba = self.model.mat_rgba[
             self.sclera_material_id
         ].copy()
+        self._base_light_diffuse = self.model.light_diffuse.copy()
+        self._base_light_specular = self.model.light_specular.copy()
         self._last_contact_metrics = {
             "wall_contact_detected": False,
             "wall_contact_count": 0,
@@ -185,6 +187,8 @@ class Meca500VisualAlignmentPlant:
             self._base_trocar_rgba
         )
         self.model.mat_rgba[self.sclera_material_id] = self._base_sclera_rgba
+        self.model.light_diffuse[:] = self._base_light_diffuse
+        self.model.light_specular[:] = self._base_light_specular
         self.mujoco.mj_forward(self.model, self.data)
 
     def set_domain_randomization(
@@ -199,6 +203,7 @@ class Meca500VisualAlignmentPlant:
         camera_fovy_scale: float = 1.0,
         trocar_rgb_scale: tuple[float, float, float] = (1.0, 1.0, 1.0),
         sclera_rgb_scale: tuple[float, float, float] = (1.0, 1.0, 1.0),
+        light_intensity_scale: float = 1.0,
     ) -> None:
         """Apply reproducible model-domain changes for evaluation only."""
 
@@ -255,6 +260,17 @@ class Meca500VisualAlignmentPlant:
                 1.0,
             )
             self.model.mat_rgba[material_id] = rgba
+        light_scale = float(light_intensity_scale)
+        self.model.light_diffuse[:] = np.clip(
+            self._base_light_diffuse * light_scale,
+            0.0,
+            1.0,
+        )
+        self.model.light_specular[:] = np.clip(
+            self._base_light_specular * light_scale,
+            0.0,
+            1.0,
+        )
         self.mujoco.mj_forward(self.model, self.data)
 
     def reset(self, q_deg: np.ndarray | None = None) -> None:
