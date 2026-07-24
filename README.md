@@ -29,8 +29,9 @@
 - M4：完整 Meca500 六轴 plant 中的视觉授权、轴向进给、视觉撤权、解析间隙和
   MuJoCo 接触指标已打通；eye-in-hand 与世界视角来自同一 `MjModel/MjData`。
 - M5：统一六轴随机评测在 164 回合确认旧基线存在系统性近场姿态/深度失败，保留为
-  非正式诊断基线；当前进入 M5.1/M5.2 主动多视点孔轴估计修复，修复候选通过后再
-  执行正式 500 回合冻结。
+  非正式诊断基线；M5.2-A 坐标审计和 M5.2-B 非共线三视点孔轴估计已完成第一版，
+  主动观察安全门在 6 个姿态点和 5 个历史失败种子中实现错误授权 0。随机化下最大
+  法向估计误差仍为 2.53°，因此当前继续修复感知，不进入 M6，也不执行正式 500 回合。
 
 控制动作只读取 eye-in-hand RGB 检测结果。MuJoCo 目标真值只用于评价，特权几何分割
 只用于生成训练标签，不进入在线控制器。
@@ -70,6 +71,9 @@ python run_mujoco_fine_batch.py --episodes 50
 python run_mujoco_full_flow.py
 python run_mujoco_meca500_full_flow.py
 python run_m5_prefreeze_batch.py --episodes 20
+python run_m5_2_geometry_audit.py
+python run_m5_2_multiview_smoke.py
+python run_m5_2_gate_evaluation.py
 ```
 
 生成数据、训练 YOLO 并运行 M2 闭环：
@@ -88,13 +92,15 @@ python run_mujoco_coarse_alignment.py `
 
 详见
 [实施计划](docs/plans/VISUAL_ALIGNMENT_AND_INSERTION_PLAN_20260723.md)、
-[当前状态](docs/handoffs/CURRENT_PROJECT_STATUS_20260723.md)和
+[当前状态](docs/handoffs/CURRENT_PROJECT_STATUS_20260724.md)和
 [M1/M2 NIH 基线记录](docs/experiments/M1_M2_NIH_HRA_BASELINE_20260723.md)、
 [M3 NIH 精对准记录](docs/experiments/M3_NIH_HRA_FINE_ALIGNMENT_20260723.md)和
 [M4 单臂完整流程记录](docs/experiments/M4_NIH_HRA_FULL_FLOW_20260723.md)、
 [场景与视频冻结合同](docs/project/SCENE_AND_VIDEO_CONTRACT_20260723.md)和
 [M5 冻结前就绪评测](docs/experiments/M5_PREFREEZE_READINESS_20260723.md)和
 [M5 六轴冻结协议](docs/experiments/M5_FROZEN_SIX_AXIS_PROTOCOL_20260724.md)。
+M5.2 当前结果见
+[主动多视点状态门评测](docs/experiments/M5_2_ACTIVE_GATE_RESULT_20260724.md)。
 当前已知问题与安全边界见
 [技术风险清单](docs/project/CURRENT_TECHNICAL_RISKS_20260724.md)，后续执行顺序见
 [主动多视点对准计划](docs/plans/NEXT_STAGE_ACTIVE_MULTIVIEW_ALIGNMENT_PLAN_20260724.md)

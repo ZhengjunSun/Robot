@@ -23,6 +23,7 @@ from .insertion_handoff import (
     TraditionalInsertionHandoffController,
 )
 from .staged_alignment import (
+    ActiveMultiviewObservation,
     AlignmentDecision,
     AlignmentPhase,
     AlignmentThresholds,
@@ -34,6 +35,7 @@ from .staged_alignment import (
 from .visual_loop import StagedVisualAlignmentLoop, VisualLoopRecord, VisualLoopResult
 
 __all__ = [
+    "ActiveMultiviewObservation",
     "AlignmentDecision",
     "AlignmentPhase",
     "AlignmentThresholds",

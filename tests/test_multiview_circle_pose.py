@@ -7,6 +7,8 @@ import pytest
 from real_3d_alignment.multiview_circle_pose import (
     CalibratedCameraView,
     EllipseObservation,
+    MultiviewCirclePose,
+    active_observation_from_multiview_pose,
     estimate_multiview_circle_pose,
     project_world_points,
     sample_circle_world,
@@ -87,3 +89,28 @@ def test_multiview_requires_two_views() -> None:
             initial_center_world_m=np.asarray([0.0, 0.0, -0.02]),
             initial_normal_world=np.asarray([0.0, 0.0, -1.0]),
         )
+
+
+def test_pose_converts_to_active_gate_observation() -> None:
+    pose = MultiviewCirclePose(
+        center_world_m=np.asarray([0.0001, 0.0, -0.0221]),
+        normal_world=np.asarray([0.0, 0.0, -1.0]),
+        rms_normalized_conic_residual=0.003,
+        covariance=np.eye(6),
+        covariance_condition=1.0e7,
+        view_count=3,
+        success=True,
+    )
+    active = active_observation_from_multiview_pose(
+        pose,
+        observation_id=7,
+        camera_position_world_m=np.zeros(3),
+        tool_axis_world=np.asarray([0.0, 0.0, -1.0]),
+        target_standoff_mm=22.0,
+        all_views_reachable=True,
+        all_rings_detected=True,
+    )
+    assert active.lateral_error_mm == pytest.approx(0.1)
+    assert active.observation_id == 7
+    assert active.axis_error_deg == pytest.approx(0.0)
+    assert active.standoff_error_mm == pytest.approx(0.1)

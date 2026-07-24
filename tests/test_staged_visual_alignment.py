@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from real_3d_alignment.staged_alignment import (
+    ActiveMultiviewObservation,
     AlignmentPhase,
     AlignmentThresholds,
     CoarseObservation,
@@ -33,6 +34,20 @@ def aligned_fine() -> FineObservation:
         standoff_error_mm=0.1,
         reprojection_error_px=0.2,
         quality_gate_pass=True,
+    )
+
+
+def aligned_active() -> ActiveMultiviewObservation:
+    return ActiveMultiviewObservation(
+        observation_id=1,
+        view_count=3,
+        all_views_reachable=True,
+        all_rings_detected=True,
+        lateral_error_mm=0.05,
+        axis_error_deg=0.8,
+        standoff_error_mm=0.1,
+        normalized_conic_residual=0.003,
+        covariance_condition=1.0e8,
     )
 
 
@@ -94,6 +109,90 @@ def test_insertion_handoff_needs_consecutive_stable_frames() -> None:
     ]
     assert not observations[1].insertion_handoff_ready
     assert observations[2].insertion_handoff_ready
+
+
+def test_active_multiview_phase_is_required_before_alignment() -> None:
+    gate = StagedAlignmentGate(
+        AlignmentThresholds(
+            required_stable_frames=1,
+            require_active_multiview_confirmation=True,
+        )
+    )
+    waiting = gate.update(
+        coarse=coarse((320.0, 240.0)),
+        fine=aligned_fine(),
+    )
+    aligned = gate.update(
+        coarse=coarse((320.0, 240.0)),
+        fine=aligned_fine(),
+        active_multiview=aligned_active(),
+    )
+    assert waiting.phase is AlignmentPhase.OBSERVE_ACTIVE
+    assert not waiting.insertion_handoff_ready
+    assert aligned.phase is AlignmentPhase.ALIGNED
+    assert aligned.insertion_handoff_ready
+
+
+def test_bad_or_incomplete_active_observation_fails_closed() -> None:
+    gate = StagedAlignmentGate(
+        AlignmentThresholds(
+            required_stable_frames=1,
+            require_active_multiview_confirmation=True,
+        )
+    )
+    bad = ActiveMultiviewObservation(
+        **{
+            **aligned_active().__dict__,
+            "view_count": 2,
+            "all_views_reachable": False,
+            "axis_error_deg": 2.5,
+            "covariance_condition": float("inf"),
+        }
+    )
+    decision = gate.update(
+        coarse=coarse((320.0, 240.0)),
+        fine=aligned_fine(),
+        active_multiview=bad,
+    )
+    assert decision.phase is AlignmentPhase.OBSERVE_ACTIVE
+    assert not decision.insertion_handoff_ready
+    assert "active_view_unreachable" in decision.reasons
+    assert "active_view_count_below_threshold" in decision.reasons
+    assert "active_axis_error_above_threshold" in decision.reasons
+    assert "active_covariance_condition_above_threshold" in decision.reasons
+
+
+def test_reused_active_observation_cannot_accumulate_stability() -> None:
+    gate = StagedAlignmentGate(
+        AlignmentThresholds(
+            required_stable_frames=2,
+            require_active_multiview_confirmation=True,
+        )
+    )
+    first = gate.update(
+        coarse=coarse((320.0, 240.0)),
+        fine=aligned_fine(),
+        active_multiview=aligned_active(),
+    )
+    stale = gate.update(
+        coarse=coarse((320.0, 240.0)),
+        fine=aligned_fine(),
+        active_multiview=aligned_active(),
+    )
+    fresh = ActiveMultiviewObservation(
+        **{**aligned_active().__dict__, "observation_id": 2}
+    )
+    after_stale = gate.update(
+        coarse=coarse((320.0, 240.0)),
+        fine=aligned_fine(),
+        active_multiview=fresh,
+    )
+    assert first.stable_frames == 1
+    assert stale.stable_frames == 0
+    assert stale.phase is AlignmentPhase.OBSERVE_ACTIVE
+    assert stale.reasons == ("active_multiview_observation_not_fresh",)
+    assert after_stale.stable_frames == 1
+    assert not after_stale.insertion_handoff_ready
 
 
 def test_failed_frame_resets_stability_counter() -> None:

@@ -6,6 +6,7 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from .geometry_audit import normalized
+from .staged_alignment import ActiveMultiviewObservation
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,43 @@ class MultiviewCirclePose:
     covariance_condition: float
     view_count: int
     success: bool
+
+
+def active_observation_from_multiview_pose(
+    pose: MultiviewCirclePose,
+    *,
+    observation_id: int,
+    camera_position_world_m: np.ndarray,
+    tool_axis_world: np.ndarray,
+    target_standoff_mm: float,
+    all_views_reachable: bool,
+    all_rings_detected: bool,
+) -> ActiveMultiviewObservation:
+    """Convert an estimated world circle into the fail-closed gate contract."""
+
+    camera_position = np.asarray(
+        camera_position_world_m,
+        dtype=np.float64,
+    ).reshape(3)
+    tool_axis = normalized(tool_axis_world)
+    relative = pose.center_world_m - camera_position
+    axial_distance_mm = float(np.dot(relative, tool_axis) * 1000.0)
+    lateral_vector = relative - np.dot(relative, tool_axis) * tool_axis
+    normal = normalized(pose.normal_world)
+    if float(np.dot(normal, tool_axis)) < 0.0:
+        normal = -normal
+    cosine = float(np.clip(np.dot(normal, tool_axis), -1.0, 1.0))
+    return ActiveMultiviewObservation(
+        observation_id=int(observation_id),
+        view_count=pose.view_count,
+        all_views_reachable=bool(all_views_reachable),
+        all_rings_detected=bool(all_rings_detected),
+        lateral_error_mm=float(np.linalg.norm(lateral_vector) * 1000.0),
+        axis_error_deg=float(np.rad2deg(np.arccos(cosine))),
+        standoff_error_mm=axial_distance_mm - float(target_standoff_mm),
+        normalized_conic_residual=pose.rms_normalized_conic_residual,
+        covariance_condition=pose.covariance_condition,
+    )
 
 
 def project_world_points(

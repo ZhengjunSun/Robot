@@ -12,6 +12,7 @@ class AlignmentPhase(str, Enum):
     SEARCH = "search"
     COARSE = "coarse_alignment"
     FINE = "fine_alignment"
+    OBSERVE_ACTIVE = "active_multiview_observation"
     ALIGNED = "aligned"
 
 
@@ -67,6 +68,19 @@ class FineObservation:
 
 
 @dataclass(frozen=True)
+class ActiveMultiviewObservation:
+    observation_id: int
+    view_count: int
+    all_views_reachable: bool
+    all_rings_detected: bool
+    lateral_error_mm: float
+    axis_error_deg: float
+    standoff_error_mm: float
+    normalized_conic_residual: float
+    covariance_condition: float
+
+
+@dataclass(frozen=True)
 class AlignmentThresholds:
     minimum_coarse_confidence: float = 0.50
     coarse_to_fine_center_error_px: float = 30.0
@@ -77,12 +91,21 @@ class AlignmentThresholds:
     maximum_standoff_error_mm: float = 0.30
     maximum_reprojection_error_px: float = 0.50
     required_stable_frames: int = 5
+    require_active_multiview_confirmation: bool = False
+    minimum_active_view_count: int = 3
+    maximum_active_lateral_error_mm: float = 0.20
+    maximum_active_axis_error_deg: float = 2.0
+    maximum_active_standoff_error_mm: float = 0.70
+    maximum_active_normalized_conic_residual: float = 0.01
+    maximum_active_covariance_condition: float = 3.0e8
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.minimum_coarse_confidence <= 1.0:
             raise ValueError("minimum_coarse_confidence must be in [0, 1].")
         if self.required_stable_frames < 1:
             raise ValueError("required_stable_frames must be positive.")
+        if self.minimum_active_view_count < 2:
+            raise ValueError("minimum_active_view_count must be at least 2.")
         numeric_limits = (
             self.coarse_to_fine_center_error_px,
             self.maximum_optical_outer_error_px,
@@ -91,6 +114,11 @@ class AlignmentThresholds:
             self.maximum_axis_error_deg,
             self.maximum_standoff_error_mm,
             self.maximum_reprojection_error_px,
+            self.maximum_active_lateral_error_mm,
+            self.maximum_active_axis_error_deg,
+            self.maximum_active_standoff_error_mm,
+            self.maximum_active_normalized_conic_residual,
+            self.maximum_active_covariance_condition,
         )
         if any(value < 0.0 for value in numeric_limits):
             raise ValueError("Alignment thresholds must be nonnegative.")
@@ -117,15 +145,18 @@ class StagedAlignmentGate:
     def __init__(self, thresholds: AlignmentThresholds | None = None):
         self.thresholds = thresholds or AlignmentThresholds()
         self.stable_frames = 0
+        self._last_active_observation_id: int | None = None
 
     def reset(self) -> None:
         self.stable_frames = 0
+        self._last_active_observation_id = None
 
     def update(
         self,
         *,
         coarse: CoarseObservation | None,
         fine: FineObservation | None,
+        active_multiview: ActiveMultiviewObservation | None = None,
     ) -> AlignmentDecision:
         if coarse is None:
             self.stable_frames = 0
@@ -190,6 +221,69 @@ class StagedAlignmentGate:
                 metrics=fine_metrics,
             )
 
+        if self.thresholds.require_active_multiview_confirmation:
+            if active_multiview is None:
+                self.stable_frames = 0
+                return self._decision(
+                    AlignmentPhase.OBSERVE_ACTIVE,
+                    hold_position=True,
+                    reasons=("active_multiview_observation_required",),
+                    metrics=fine_metrics,
+                )
+            active_metrics: dict[str, float | bool | int] = {
+                **fine_metrics,
+                "active_observation_id": int(
+                    active_multiview.observation_id
+                ),
+                "active_view_count": int(active_multiview.view_count),
+                "active_all_views_reachable": bool(
+                    active_multiview.all_views_reachable
+                ),
+                "active_all_rings_detected": bool(
+                    active_multiview.all_rings_detected
+                ),
+                "active_lateral_error_mm": abs(
+                    float(active_multiview.lateral_error_mm)
+                ),
+                "active_axis_error_deg": abs(
+                    float(active_multiview.axis_error_deg)
+                ),
+                "active_standoff_error_mm": abs(
+                    float(active_multiview.standoff_error_mm)
+                ),
+                "active_normalized_conic_residual": float(
+                    active_multiview.normalized_conic_residual
+                ),
+                "active_covariance_condition": float(
+                    active_multiview.covariance_condition
+                ),
+            }
+            active_failed = self._failed_active_checks(active_multiview)
+            if active_failed:
+                self.stable_frames = 0
+                return self._decision(
+                    AlignmentPhase.OBSERVE_ACTIVE,
+                    hold_position=True,
+                    reasons=tuple(active_failed),
+                    metrics=active_metrics,
+                )
+            if (
+                self._last_active_observation_id is not None
+                and active_multiview.observation_id
+                <= self._last_active_observation_id
+            ):
+                self.stable_frames = 0
+                return self._decision(
+                    AlignmentPhase.OBSERVE_ACTIVE,
+                    hold_position=True,
+                    reasons=("active_multiview_observation_not_fresh",),
+                    metrics=active_metrics,
+                )
+            self._last_active_observation_id = (
+                active_multiview.observation_id
+            )
+            fine_metrics = active_metrics
+
         self.stable_frames += 1
         if self.stable_frames < self.thresholds.required_stable_frames:
             return self._decision(
@@ -225,6 +319,45 @@ class StagedAlignmentGate:
             failed.append("standoff_error_above_threshold")
         if fine.reprojection_error_px > limits.maximum_reprojection_error_px:
             failed.append("reprojection_error_above_threshold")
+        return failed
+
+    def _failed_active_checks(
+        self,
+        active: ActiveMultiviewObservation,
+    ) -> list[str]:
+        limits = self.thresholds
+        failed: list[str] = []
+        if active.observation_id < 0:
+            failed.append("active_observation_id_invalid")
+        if not active.all_views_reachable:
+            failed.append("active_view_unreachable")
+        if not active.all_rings_detected:
+            failed.append("active_ring_detection_incomplete")
+        if active.view_count < limits.minimum_active_view_count:
+            failed.append("active_view_count_below_threshold")
+        if (
+            abs(active.lateral_error_mm)
+            > limits.maximum_active_lateral_error_mm
+        ):
+            failed.append("active_lateral_error_above_threshold")
+        if abs(active.axis_error_deg) > limits.maximum_active_axis_error_deg:
+            failed.append("active_axis_error_above_threshold")
+        if (
+            abs(active.standoff_error_mm)
+            > limits.maximum_active_standoff_error_mm
+        ):
+            failed.append("active_standoff_error_above_threshold")
+        if (
+            active.normalized_conic_residual
+            > limits.maximum_active_normalized_conic_residual
+        ):
+            failed.append("active_conic_residual_above_threshold")
+        if (
+            not math.isfinite(active.covariance_condition)
+            or active.covariance_condition
+            > limits.maximum_active_covariance_condition
+        ):
+            failed.append("active_covariance_condition_above_threshold")
         return failed
 
     def _decision(
