@@ -22,10 +22,27 @@ class EllipseObservation:
 
 
 @dataclass(frozen=True)
+class AdditionalCircleObservation:
+    radius_m: float
+    ellipse: EllipseObservation
+    constraint_mode: str = "full_ellipse"
+    residual_weight: float = 1.0
+
+    def __post_init__(self) -> None:
+        if self.radius_m <= 0.0:
+            raise ValueError("Additional circle radius must be positive.")
+        if self.constraint_mode not in ("full_ellipse", "center_scale"):
+            raise ValueError("Unknown additional-circle constraint mode.")
+        if self.residual_weight <= 0.0:
+            raise ValueError("Residual weight must be positive.")
+
+
+@dataclass(frozen=True)
 class CalibratedCameraView:
     position_world_m: np.ndarray
     rotation_world: np.ndarray
     ellipse: EllipseObservation
+    additional_circles: tuple[AdditionalCircleObservation, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -153,6 +170,29 @@ def ellipse_normalized_radius_residual(
     return radius - 1.0
 
 
+def ellipse_center_scale_residual(
+    points_px: np.ndarray,
+    ellipse: EllipseObservation,
+) -> np.ndarray:
+    """Center/scale residual that deliberately ignores unstable ellipse angle."""
+
+    points = np.asarray(points_px, dtype=np.float64).reshape(-1, 2)
+    predicted_center = np.mean(points, axis=0)
+    predicted_radius = float(
+        np.mean(np.linalg.norm(points - predicted_center, axis=1))
+    )
+    observed_center = np.asarray(ellipse.center_px, dtype=np.float64)
+    observed_radius = 0.25 * (
+        ellipse.major_diameter_px + ellipse.minor_diameter_px
+    )
+    return np.asarray(
+        [
+            *(predicted_center - observed_center) / observed_radius,
+            np.log(max(predicted_radius, 1e-9) / observed_radius),
+        ]
+    )
+
+
 def estimate_multiview_circle_pose(
     views: list[CalibratedCameraView],
     *,
@@ -171,6 +211,14 @@ def estimate_multiview_circle_pose(
     if len(views) < 2:
         raise ValueError("At least two calibrated views are required.")
     initial_normal = normalized(initial_normal_world)
+    residual_count = sum(
+        48
+        + sum(
+            48 if item.constraint_mode == "full_ellipse" else 3
+            for item in view.additional_circles
+        )
+        for view in views
+    )
     x0 = np.concatenate(
         (
             np.asarray(initial_center_world_m, dtype=np.float64).reshape(3),
@@ -183,26 +231,48 @@ def estimate_multiview_circle_pose(
         raw_normal = parameters[3:]
         normal_norm = float(np.linalg.norm(raw_normal))
         if normal_norm <= 1e-9:
-            return np.full(48 * len(views) + 1, 1e3)
+            return np.full(residual_count + 1, 1e3)
         normal = raw_normal / normal_norm
-        circle = sample_circle_world(center, normal, radius_m)
         values = []
         try:
             for view in views:
-                pixels = project_world_points(
-                    circle,
-                    view,
-                    focal_length_px=focal_length_px,
-                    principal_point_px=principal_point_px,
+                circles = (
+                    AdditionalCircleObservation(radius_m, view.ellipse),
+                    *view.additional_circles,
                 )
-                values.append(
-                    ellipse_normalized_radius_residual(
-                        pixels,
-                        view.ellipse,
+                for circle_observation in circles:
+                    circle = sample_circle_world(
+                        center,
+                        normal,
+                        circle_observation.radius_m,
                     )
-                )
+                    pixels = project_world_points(
+                        circle,
+                        view,
+                        focal_length_px=focal_length_px,
+                        principal_point_px=principal_point_px,
+                    )
+                    if (
+                        circle_observation.constraint_mode
+                        == "center_scale"
+                    ):
+                        circle_residual = ellipse_center_scale_residual(
+                            pixels,
+                            circle_observation.ellipse,
+                        )
+                    else:
+                        circle_residual = (
+                            ellipse_normalized_radius_residual(
+                                pixels,
+                                circle_observation.ellipse,
+                            )
+                        )
+                    values.append(
+                        circle_residual
+                        * circle_observation.residual_weight
+                    )
         except ValueError:
-            return np.full(48 * len(views) + 1, 1e3)
+            return np.full(residual_count + 1, 1e3)
         values.append(np.asarray([(normal_norm - 1.0) * 10.0]))
         return np.concatenate(values)
 
@@ -231,3 +301,70 @@ def estimate_multiview_circle_pose(
         view_count=len(views),
         success=bool(result.success and np.isfinite(condition)),
     )
+
+
+def ellipse_normal_initializations_world(
+    view: CalibratedCameraView,
+) -> tuple[np.ndarray, ...]:
+    """Return optical-axis and two monocular circle-normal hypotheses."""
+
+    rotation = np.asarray(view.rotation_world, dtype=np.float64).reshape(3, 3)
+    optical = -rotation[:, 2]
+    ellipse = view.ellipse
+    ratio = float(
+        np.clip(
+            ellipse.minor_diameter_px / ellipse.major_diameter_px,
+            0.0,
+            1.0,
+        )
+    )
+    tilt = float(np.arccos(ratio))
+    angle = np.deg2rad(float(ellipse.major_angle_deg))
+    minor_image = np.asarray([-np.sin(angle), np.cos(angle)])
+    candidates = [optical]
+    for sign in (-1.0, 1.0):
+        normal_camera = np.asarray(
+            [
+                sign * np.sin(tilt) * minor_image[0],
+                -sign * np.sin(tilt) * minor_image[1],
+                -np.cos(tilt),
+            ]
+        )
+        candidates.append(rotation @ normalized(normal_camera))
+    return tuple(normalized(value) for value in candidates)
+
+
+def estimate_multiview_circle_pose_multistart(
+    views: list[CalibratedCameraView],
+    *,
+    radius_m: float,
+    focal_length_px: float,
+    principal_point_px: tuple[float, float],
+    initial_center_world_m: np.ndarray,
+) -> tuple[MultiviewCirclePose, tuple[MultiviewCirclePose, ...]]:
+    """Resolve monocular circle hypotheses by calibrated multiview fit."""
+
+    if not views:
+        raise ValueError("At least one view is required for initialization.")
+    candidates = tuple(
+        estimate_multiview_circle_pose(
+            views,
+            radius_m=radius_m,
+            focal_length_px=focal_length_px,
+            principal_point_px=principal_point_px,
+            initial_center_world_m=initial_center_world_m,
+            initial_normal_world=normal,
+        )
+        for normal in ellipse_normal_initializations_world(views[0])
+    )
+    successful = tuple(item for item in candidates if item.success)
+    if not successful:
+        return candidates[0], candidates
+    best = min(
+        successful,
+        key=lambda item: (
+            item.rms_normalized_conic_residual,
+            item.covariance_condition,
+        ),
+    )
+    return best, candidates

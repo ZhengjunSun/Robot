@@ -19,9 +19,9 @@
   "active_multiview_confirmation": {
     "enabled": true,
     "view_offsets_camera_xy_mm": [
-      [-1.5, 0.0],
-      [0.0, 1.5],
-      [1.5, -1.5]
+      [-3.0, 0.0],
+      [0.0, 3.0],
+      [3.0, -3.0]
     ],
     "minimum_view_count": 3,
     "truth_inputs_allowed": false,

@@ -12,10 +12,12 @@ import numpy as np
 from real_3d_alignment.geometry_audit import rotation_error_deg
 from real_3d_alignment.meca500_visual_env import Meca500VisualAlignmentPlant
 from real_3d_alignment.multiview_circle_pose import (
+    AdditionalCircleObservation,
     CalibratedCameraView,
     EllipseObservation,
     active_observation_from_multiview_pose,
     estimate_multiview_circle_pose,
+    estimate_multiview_circle_pose_multistart,
 )
 from real_3d_alignment.nih_baseline import (
     TROCAR_FLANGE_OUTER_RADIUS_MM,
@@ -42,6 +44,7 @@ from run_m5_frozen_batch import (
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT = ROOT / "output" / "m5_2_multiview_smoke"
+TROCAR_LUMEN_RADIUS_MM = 0.50
 
 
 def _axis_error_deg(first: np.ndarray, second: np.ndarray) -> float:
@@ -70,6 +73,21 @@ def main() -> None:
     parser.add_argument("--episode", type=int)
     parser.add_argument("--episode-seed", type=int)
     parser.add_argument(
+        "--intrinsics-mode",
+        choices=("nominal", "calibrated"),
+        default="calibrated",
+    )
+    parser.add_argument(
+        "--ring-mode",
+        choices=("outer", "joint"),
+        default="joint",
+    )
+    parser.add_argument(
+        "--normal-init",
+        choices=("single", "multistart"),
+        default="multistart",
+    )
+    parser.add_argument(
         "--view-offset-xy-mm",
         type=float,
         nargs=2,
@@ -87,8 +105,8 @@ def main() -> None:
         settle_steps=1,
     )
     fine_detector, outer_detector = build_detector(args.height)
-    focal_length_px = eye_in_hand_focal_length_px(args.height)
-    principal_point_px = (0.5 * args.width, 0.5 * args.height)
+    nominal_focal_length_px = eye_in_hand_focal_length_px(args.height)
+    nominal_principal_point_px = (0.5 * args.width, 0.5 * args.height)
     domain_sample = None
     image_source = plant
     try:
@@ -120,6 +138,29 @@ def main() -> None:
                 sample=domain_sample,
                 rng=rng,
             )
+        if args.intrinsics_mode == "calibrated":
+            focal_length_px = float(
+                0.5
+                * args.height
+                / np.tan(
+                    np.deg2rad(
+                        float(plant.model.cam_fovy[plant.camera_id])
+                    )
+                    / 2.0
+                )
+            )
+            principal_shift = (
+                (0.0, 0.0)
+                if domain_sample is None
+                else domain_sample.principal_point_shift_px
+            )
+            principal_point_px = (
+                nominal_principal_point_px[0] + principal_shift[0],
+                nominal_principal_point_px[1] + principal_shift[1],
+            )
+        else:
+            focal_length_px = nominal_focal_length_px
+            principal_point_px = nominal_principal_point_px
         reference_q = solve_privileged_coaxial_reference(plant)
         plant.probe_joint_configuration(reference_q)
         requested_rotation = plant.camera_rotation_world().copy()
@@ -145,9 +186,9 @@ def main() -> None:
         )
 
         view_offsets_xy_mm = args.view_offset_xy_mm or [
-            (-1.5, 0.0),
-            (0.0, 1.5),
-            (1.5, -1.5),
+            (-3.0, 0.0),
+            (0.0, 3.0),
+            (3.0, -3.0),
         ]
         views: list[CalibratedCameraView] = []
         rows = []
@@ -166,10 +207,33 @@ def main() -> None:
             plant.probe_joint_configuration(tilted_q + translation_delta)
             image = image_source.capture_rgb()
             outer = outer_detector.detect(image)
+            fine = fine_detector.detect(image)
             if outer is None:
                 raise RuntimeError(
                     "Outer ring missing at view offset "
                     f"({offset_x_mm}, {offset_y_mm}) mm."
+                )
+            additional_circles: tuple[
+                AdditionalCircleObservation, ...
+            ] = ()
+            if args.ring_mode == "joint":
+                if fine is None:
+                    raise RuntimeError(
+                        "Inner/outer ring observation missing at view offset "
+                        f"({offset_x_mm}, {offset_y_mm}) mm."
+                    )
+                additional_circles = (
+                    AdditionalCircleObservation(
+                        radius_m=TROCAR_LUMEN_RADIUS_MM * 1e-3,
+                        ellipse=EllipseObservation(
+                            center_px=fine.observation.inner_center_px,
+                            major_diameter_px=fine.inner_major_diameter_px,
+                            minor_diameter_px=fine.inner_minor_diameter_px,
+                            major_angle_deg=fine.inner_angle_deg,
+                        ),
+                        constraint_mode="center_scale",
+                        residual_weight=0.25,
+                    ),
                 )
             view = CalibratedCameraView(
                 position_world_m=np.asarray(
@@ -183,6 +247,7 @@ def main() -> None:
                     minor_diameter_px=outer.minor_diameter_px,
                     major_angle_deg=outer.angle_deg,
                 ),
+                additional_circles=additional_circles,
             )
             views.append(view)
             rows.append(
@@ -198,6 +263,10 @@ def main() -> None:
                         view.rotation_world.tolist()
                     ),
                     "ellipse": asdict(view.ellipse),
+                    "additional_circles": [
+                        asdict(value)
+                        for value in view.additional_circles
+                    ],
                 }
             )
             image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -227,8 +296,8 @@ def main() -> None:
 
         first = views[0]
         depth_m = (
-            fine_detector.config.focal_length_px
-            * fine_detector.config.trocar_outer_radius_mm
+            focal_length_px
+            * TROCAR_FLANGE_OUTER_RADIUS_MM
             / (
                 0.25
                 * (
@@ -251,14 +320,26 @@ def main() -> None:
             first.position_world_m + first.rotation_world @ initial_local
         )
         initial_normal = -first.rotation_world[:, 2]
-        estimate = estimate_multiview_circle_pose(
-            views,
-            radius_m=TROCAR_FLANGE_OUTER_RADIUS_MM * 1e-3,
-            focal_length_px=focal_length_px,
-            principal_point_px=principal_point_px,
-            initial_center_world_m=initial_center,
-            initial_normal_world=initial_normal,
-        )
+        if args.normal_init == "multistart":
+            estimate, candidate_estimates = (
+                estimate_multiview_circle_pose_multistart(
+                    views,
+                    radius_m=TROCAR_FLANGE_OUTER_RADIUS_MM * 1e-3,
+                    focal_length_px=focal_length_px,
+                    principal_point_px=principal_point_px,
+                    initial_center_world_m=initial_center,
+                )
+            )
+        else:
+            estimate = estimate_multiview_circle_pose(
+                views,
+                radius_m=TROCAR_FLANGE_OUTER_RADIUS_MM * 1e-3,
+                focal_length_px=focal_length_px,
+                principal_point_px=principal_point_px,
+                initial_center_world_m=initial_center,
+                initial_normal_world=initial_normal,
+            )
+            candidate_estimates = (estimate,)
         active_observation = active_observation_from_multiview_pose(
             estimate,
             observation_id=1,
@@ -286,13 +367,15 @@ def main() -> None:
         gate_decision = smoke_gate.update(
             coarse=CoarseObservation(
                 image_size_px=(args.width, args.height),
-                target_center_px=center_ellipse.center_px,
+                # The state gate is evaluated after returning from the
+                # active-view micro-motion to the centered baseline pose.
+                target_center_px=principal_point_px,
                 confidence=1.0,
             ),
             fine=FineObservation(
                 image_center_px=principal_point_px,
-                outer_center_px=center_ellipse.center_px,
-                inner_center_px=center_ellipse.center_px,
+                outer_center_px=principal_point_px,
+                inner_center_px=principal_point_px,
                 # Deliberately model the legacy monocular false-aligned
                 # observation. The experiment asks whether the new active
                 # gate can revoke that otherwise-safe single-frame claim.
@@ -337,6 +420,13 @@ def main() -> None:
             "domain_sample": (
                 None if domain_sample is None else asdict(domain_sample)
             ),
+            "perception_configuration": {
+                "intrinsics_mode": args.intrinsics_mode,
+                "ring_mode": args.ring_mode,
+                "normal_init": args.normal_init,
+                "focal_length_px": focal_length_px,
+                "principal_point_px": list(principal_point_px),
+            },
             "requested_tilt_xy_deg": [
                 float(args.tilt_deg),
                 float(args.tilt_y_deg),
@@ -353,6 +443,11 @@ def main() -> None:
                 ),
                 "covariance_condition": estimate.covariance_condition,
                 "success": estimate.success,
+                "candidate_count": len(candidate_estimates),
+                "candidate_residuals": [
+                    value.rms_normalized_conic_residual
+                    for value in candidate_estimates
+                ],
             },
             "active_multiview_observation": asdict(active_observation),
             "state_machine": {

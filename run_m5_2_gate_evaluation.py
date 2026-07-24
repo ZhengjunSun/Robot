@@ -35,6 +35,7 @@ def run_case(
     tilt_y_deg: float,
     episode: int | None = None,
     episode_seed: int | None = None,
+    extra_args: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     command = [
         sys.executable,
@@ -55,6 +56,7 @@ def run_case(
                 str(episode_seed),
             ]
         )
+    command.extend(extra_args)
     completed = subprocess.run(
         command,
         cwd=ROOT,
