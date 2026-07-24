@@ -6,7 +6,10 @@ import hashlib
 import json
 import math
 import multiprocessing as mp
+import os
+import platform
 import subprocess
+import sys
 import time
 from collections import Counter
 from dataclasses import asdict, dataclass, replace
@@ -92,6 +95,23 @@ def current_git_commit() -> str | None:
         ).strip()
     except (OSError, subprocess.CalledProcessError):
         return None
+
+
+def runtime_environment() -> dict[str, str]:
+    import mujoco
+
+    return {
+        "platform": platform.platform(),
+        "python": sys.version,
+        "mujoco": mujoco.__version__,
+        "opencv": cv2.__version__,
+        "numpy": np.__version__,
+        "mujoco_gl": os.environ.get("MUJOCO_GL", "platform_default"),
+        "pyopengl_platform": os.environ.get(
+            "PYOPENGL_PLATFORM",
+            "platform_default",
+        ),
+    }
 
 
 @dataclass(frozen=True)
@@ -884,6 +904,7 @@ def write_outputs(
     settle_steps: int,
     maximum_alignment_steps: int,
     nominal: bool,
+    isolate_episodes: bool,
 ) -> tuple[Path, Path]:
     summary = summarize(episodes)
     report = {
@@ -895,10 +916,12 @@ def write_outputs(
         "image_size_px": [width, height],
         "protocol_sha256": protocol_fingerprint(),
         "git_commit": current_git_commit(),
+        "runtime_environment": runtime_environment(),
         "run_configuration": {
             "settle_steps": settle_steps,
             "maximum_alignment_steps": maximum_alignment_steps,
             "nominal": nominal,
+            "isolate_episodes": isolate_episodes,
         },
         "anatomy": NIH_HRA_EYE_SOURCE,
         "eye_orientation": "upright",
@@ -990,6 +1013,14 @@ def main() -> None:
         action="store_true",
         help="Disable randomization for controller regression diagnostics.",
     )
+    parser.add_argument(
+        "--isolate-episodes",
+        action="store_true",
+        help=(
+            "Create a fresh process and OpenGL context for every episode. "
+            "Required for long Windows WGL batches."
+        ),
+    )
     args = parser.parse_args()
     if args.episodes < 1:
         raise ValueError("--episodes must be positive.")
@@ -1028,10 +1059,15 @@ def main() -> None:
             "settle_steps": args.settle_steps,
             "maximum_alignment_steps": args.maximum_alignment_steps,
             "nominal": args.nominal,
+            "isolate_episodes": args.isolate_episodes,
         }
         if existing.get("run_configuration") != expected_run_configuration:
             raise ValueError(
                 "Existing report run configuration does not match this run."
+            )
+        if existing.get("runtime_environment") != runtime_environment():
+            raise ValueError(
+                "Existing report runtime environment does not match this run."
             )
         episodes = list(existing.get("episode_results", []))
     completed_indices = {int(item["episode"]) for item in episodes}
@@ -1068,9 +1104,10 @@ def main() -> None:
                 settle_steps=args.settle_steps,
                 maximum_alignment_steps=args.maximum_alignment_steps,
                 nominal=args.nominal,
+                isolate_episodes=args.isolate_episodes,
             )
 
-    if args.workers == 1:
+    if args.workers == 1 and not args.isolate_episodes:
         plant = Meca500VisualAlignmentPlant(
             image_size_px=(args.width, args.height),
             settle_steps=args.settle_steps,
@@ -1103,6 +1140,7 @@ def main() -> None:
                 args.settle_steps,
                 args.maximum_alignment_steps,
             ),
+            maxtasksperchild=(1 if args.isolate_episodes else None),
         ) as pool:
             for result in pool.imap_unordered(
                 _run_worker_episode,
@@ -1121,6 +1159,7 @@ def main() -> None:
         settle_steps=args.settle_steps,
         maximum_alignment_steps=args.maximum_alignment_steps,
         nominal=args.nominal,
+        isolate_episodes=args.isolate_episodes,
     )
     print(json.dumps(summarize(episodes), ensure_ascii=False, indent=2))
     print(f"Report: {report_path}")

@@ -7,6 +7,7 @@ from real_3d_alignment.meca500_visual_env import Meca500VisualAlignmentPlant
 from run_m5_frozen_batch import (
     nominal_domain,
     protocol_fingerprint,
+    runtime_environment,
     sample_domain,
 )
 
@@ -94,6 +95,19 @@ def test_frozen_protocol_has_sha256_fingerprint() -> None:
     fingerprint = protocol_fingerprint()
     assert len(fingerprint) == 64
     int(fingerprint, 16)
+
+
+def test_runtime_environment_records_pixel_pipeline_versions() -> None:
+    environment = runtime_environment()
+    assert {
+        "platform",
+        "python",
+        "mujoco",
+        "opencv",
+        "numpy",
+        "mujoco_gl",
+        "pyopengl_platform",
+    }.issubset(environment)
 
 
 def test_mujoco_light_randomization_is_reversible() -> None:

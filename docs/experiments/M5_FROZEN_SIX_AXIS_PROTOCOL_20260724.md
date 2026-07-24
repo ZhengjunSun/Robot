@@ -73,8 +73,9 @@ eye-in-hand RGB
 python run_m5_frozen_batch.py `
   --episodes 500 `
   --seed 20260724 `
-  --workers 2 `
-  --checkpoint-every 5 `
+  --workers 1 `
+  --isolate-episodes `
+  --checkpoint-every 1 `
   --resume
 ```
 
@@ -85,8 +86,11 @@ python run_m5_frozen_batch.py `
 - `output/m5_frozen_500/m5_frozen_stdout.log`
 - `output/m5_frozen_500/m5_frozen_stderr.log`
 
-`--resume` 只补跑缺失的回合编号，并校验种子、图像尺寸、动力学稳定步数、最大对准
-步数、名义/随机模式以及完整协议源码 SHA-256。报告同时记录 Git 提交。达到 500
+Windows WGL 长时间复用同一个渲染上下文会在若干回合后失效，因此正式本地批次采用
+`--isolate-episodes`：每回合创建并销毁独立 MuJoCo/GL 子进程。`--resume` 只补跑
+缺失的回合编号，并校验种子、图像尺寸、动力学稳定步数、最大对准步数、名义/随机
+模式、隔离模式、Python/MuJoCo/OpenCV/NumPy/操作系统/GL 运行环境以及完整协议源码
+SHA-256。报告同时记录 Git 提交。达到 500
 回合前，报告中的
 `official_m5_frozen_baseline` 必须保持为 `false`。
 
