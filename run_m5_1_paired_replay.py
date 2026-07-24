@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import multiprocessing as mp
 import time
@@ -39,6 +40,24 @@ DEFAULT_OUTPUT = ROOT / "output" / "m5_1_paired_replay"
 _WORKER_PLANT: Meca500VisualAlignmentPlant | None = None
 _WORKER_HEIGHT = 0
 _WORKER_MAXIMUM_ALIGNMENT_STEPS = 0
+
+
+def candidate_protocol_fingerprint() -> str:
+    paths = (
+        ROOT / "run_m5_1_paired_replay.py",
+        ROOT / "real_3d_alignment" / "temporal_validation.py",
+    )
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(path.relative_to(ROOT).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def m5_1_temporal_config(image_height: int) -> TemporalFineValidationConfig:
@@ -612,6 +631,11 @@ def main() -> None:
     parser.add_argument("--maximum-cases", type=int, default=0)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume completed cases from a matching candidate report.",
+    )
+    parser.add_argument(
         "--list-only",
         action="store_true",
         help="Validate inputs and list paired cases without MuJoCo.",
@@ -664,21 +688,67 @@ def main() -> None:
 
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    ctx = mp.get_context("spawn")
+    report_path = output_dir / "m5_1_paired_report.json"
+    candidate_fingerprint = candidate_protocol_fingerprint()
+    manifest_fingerprint = file_sha256(args.manifest)
+    run_configuration = {
+        "width": args.width,
+        "height": args.height,
+        "settle_steps": args.settle_steps,
+        "maximum_alignment_steps": args.maximum_alignment_steps,
+        "workers": args.workers,
+        "replay_cases": [list(payload) for payload in payloads],
+    }
     results: list[dict[str, Any]] = []
-    with ctx.Pool(
-        processes=args.workers,
-        initializer=_initialize_worker,
-        initargs=(
-            args.width,
-            args.height,
-            args.settle_steps,
-            args.maximum_alignment_steps,
-        ),
-        maxtasksperchild=1,
-    ) as pool:
-        for result in pool.imap(_run_worker, payloads):
+    if args.resume and report_path.exists():
+        existing = json.loads(report_path.read_text(encoding="utf-8"))
+        checks = {
+            "candidate_protocol_sha256": candidate_fingerprint,
+            "source_manifest_sha256": manifest_fingerprint,
+            "source_m5_protocol_sha256": (
+                manifest["source_protocol_sha256"]
+            ),
+            "run_configuration": run_configuration,
+        }
+        mismatches = [
+            key
+            for key, expected in checks.items()
+            if existing.get(key) != expected
+        ]
+        if mismatches:
+            raise ValueError(
+                "Cannot resume M5.1 because these contracts differ: "
+                + ", ".join(mismatches)
+            )
+        results = list(existing.get("episode_results", []))
+    completed = {int(item["episode"]) for item in results}
+    pending_payloads = [
+        payload for payload in payloads if payload[0] not in completed
+    ]
+    ctx = mp.get_context("spawn")
+    if pending_payloads:
+        pool_context = ctx.Pool(
+            processes=args.workers,
+            initializer=_initialize_worker,
+            initargs=(
+                args.width,
+                args.height,
+                args.settle_steps,
+                args.maximum_alignment_steps,
+            ),
+            maxtasksperchild=1,
+        )
+    else:
+        pool_context = None
+    try:
+        iterator = (
+            ()
+            if pool_context is None
+            else pool_context.imap(_run_worker, pending_payloads)
+        )
+        for result in iterator:
             results.append(result)
+            results.sort(key=lambda item: int(item["episode"]))
             print(
                 f"[{len(results)}/{len(payloads)}] "
                 f"episode={result['episode']} "
@@ -690,6 +760,8 @@ def main() -> None:
             report = {
                 "timestamp": datetime.now().astimezone().isoformat(),
                 "status": "M5.1_paired_perception_replay",
+                "candidate_protocol_sha256": candidate_fingerprint,
+                "source_manifest_sha256": manifest_fingerprint,
                 "source_m5_protocol_sha256": (
                     manifest["source_protocol_sha256"]
                 ),
@@ -697,6 +769,7 @@ def main() -> None:
                     args.baseline_report.resolve()
                 ),
                 "privileged_truth_used_for_control": False,
+                "run_configuration": run_configuration,
                 "candidate_changes": [
                     "active_outer_then_inner_outer_orientation",
                     "temporal_fine_observation_validation",
@@ -706,10 +779,14 @@ def main() -> None:
                 "summary": paired_summary(baseline, results),
                 "episode_results": results,
             }
-            (output_dir / "m5_1_paired_report.json").write_text(
+            report_path.write_text(
                 json.dumps(report, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
+    finally:
+        if pool_context is not None:
+            pool_context.close()
+            pool_context.join()
 
 
 if __name__ == "__main__":
